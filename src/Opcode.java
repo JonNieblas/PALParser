@@ -1,8 +1,9 @@
 /*
- * This interface will be used to make different types of opcode classes
- * they will be children of this parent
- * They will each have their own requirements for format
+ * Opcode contains all methods dealing with opcodes, as well as the construction of the opList arrayList
  */
 
-public interface Opcode {
+import java.util.ArrayList;
+
+public class Opcode {
+
 }
