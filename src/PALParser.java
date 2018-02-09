@@ -72,11 +72,24 @@ public class PALParser {
             currentWord = word;
             if (wordsInLine == 1) {
                 firstWord = currentWord;
-                linesToLog.add("First word: " + firstWord);
-                //this is where we will pass the opcode (first word)
-                //to the opcode class
+                linesToLog.add("First word: " + firstWord);//to be removed (shows what first word is)
+                if(opList.contains(firstWord)){
+                    opcode.OpcodeHandler(firstWord, line, linesToLog);
+                }
             }
         }
+
+        //possibly move to Opcode class?
+        //check for label
+        //if(firstWord ends with colon and wordsInLine == 1 and follows label rules)
+            //assign to label list
+        //else if(... doesn't follow label rules)
+            //linesToLog.add(line);
+            //linesToLog.add(ill-formed label);
+        //else
+            //linesToLog.add(line);
+            //linesToLog.add(invalid opcode);
+
         wordsInLine = 0;//reset counter of words in a line
     }
 
