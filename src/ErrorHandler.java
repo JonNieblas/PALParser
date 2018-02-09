@@ -3,6 +3,7 @@ import java.util.List;
 
 public class ErrorHandler {
     private ArrayList<Integer> errorList = new ArrayList<>();
+    private ArrayList<String> problemWordList = new ArrayList<>();
     private List<String> toLogList;
 
     public ErrorHandler(List<String> list){
@@ -13,31 +14,51 @@ public class ErrorHandler {
         errorList.add(err);
     }
 
+    public void AddToProblemWordList(String word){
+        problemWordList.add(word);
+    }
+
     //adds errors to log file
     public void ErrorsToLog(){
+        if(errorList.contains(1) && errorList.contains(3)){
+            errorList.remove(Integer.valueOf(1));
+        }
         for(int i : errorList){
-            toLogList.add(Errors(i));
+            if(i == 1 || i == 0) {
+                toLogList.add(Errors(i, problemWordList.get(0)));
+            }
+            else{
+                toLogList.add(Errors(i, null));
+            }
         }
     }
 
     //points to correct error statement for .log
-    public String Errors(int i){
-        String error;
+    public String Errors(int i, String word){
+        String error = "Error Statement";
 
         if (i == 0){
-            error = "*** Wrong Operand Type: Immediate Value Where Register Was Expected";
+            error = "*** Wrong Operand Type: Immediate Value "  + word + " Where Register Was Expected.";
         }
         else if(i == 1){
-            error = "*** Ill-Formed Operand: Not a valid Operand Type";
+            error = "*** Ill-Formed Operand: " + word + " Is Not a Valid Operand Type. Registers R0 - R13 Are Valid.";
         }
         else if(i == 2){
-            error = "*** Too Many Operands: Only Three Operands Are Allowed With This Opcode";
+            error = "*** Too Many Operands: You Have Exceeded The Valid Number Of Operands For This Opcode.";
         }
         else if(i == 3){
-            error = "*** Too Few Operands: Only Three Operands Are Allowed With This Opcode";
+            error = "*** Too Few Operands: You Have Not Met The Valid Number Of Operands For This Opcode.";
         }
-        else{
-            error = "?";//change or initialize
+        else if(i == 4){
+            error = "*** Ill-Formed Label " + word + ": Label Must Be At Most 12 Characters Long With No " +
+                    "Spaces or Digits.";
+        }
+        else if(i == 5){
+            error = "*** Invalid Opcode: " + word + " Is Not a Valid Opcode. Please Review Valid Opcodes " +
+                    "For More Details.";
+        }
+        else if(i == 6){
+            error = "*** Branches to Non-Existent Label: " + word + " Is Not a Branch That Was Previously Created.";
         }
 
         return error;

@@ -8,7 +8,7 @@ import java.util.List;
 public class Opcode {
 
     private ArrayList<String> validSources = new ArrayList<String>();
-    private ArrayList<String> validDestination = new ArrayList<String>();
+    private ArrayList<String> validDestinations = new ArrayList<String>();
     String[] wordSplitter;
 
     /*
@@ -26,8 +26,11 @@ public class Opcode {
         if(opcode.equals("ADD") || opcode.equals("SUB") || opcode.equals("MUL") || opcode.equals("DIV")){
             ASMDOpcode(line, linesToLog, lineCount);
         }
-        else if(opcode.equals("MOVE") || opcode.equals("COPY")){
-            //direct it to correct method
+        else if(opcode.equals("COPY")){
+            COPYOpcode(line, linesToLog, lineCount);
+        }
+        else if(opcode.equals("MOVE")){
+            MOVEOpcode(line, linesToLog, lineCount);
         }
         else if(opcode.equals("INC") || opcode.equals("DEC")){
             //direct it to correct method
@@ -50,16 +53,38 @@ public class Opcode {
         wordSplitter = line.split(" ");
 
         for (String word : wordSplitter){
-            if((!validSources.contains(word) && wordCount > 0 && wordCount < 3 && !validDestination.contains(word))
-                    || (!validDestination.contains(word) && wordCount == 3 && !validSources.contains(word))){
+            if((!validSources.contains(word) && wordCount > 0 && wordCount < 3)
+                    || (!validDestinations.contains(word) && wordCount == 3 && !validSources.contains(word))){
+                word = word.replace(",", "");
                 StringOrInteger(err, word);
             }
             wordCount++;
         }
 
-        WordsInLine(err, wordCount);
+        WordsInLine(err, wordCount, "ASMD");
         linesToLog.add(lineCount + " " + line);
         err.ErrorsToLog();//writes errors to .log file
+    }
+
+    public void COPYOpcode(String line, List<String> linesToLog, int lineCount){
+        int wordCount = 0;
+        ErrorHandler err = new ErrorHandler(linesToLog);
+        wordSplitter = line.split(" ");
+        for(String word : wordSplitter){
+            if((wordCount == 1 && !validSources.contains(word)) || (wordCount == 2 && !validDestinations.contains(word)
+                    && !validSources.contains(word))){
+                StringOrInteger(err, word);
+            }
+            wordCount++;
+        }
+
+        WordsInLine(err, wordCount, "MC");
+        linesToLog.add(lineCount + " " + line);
+        err.ErrorsToLog();
+    }
+
+    public void MOVEOpcode(String line, List<String> linesToLog, int lineCount){
+
     }
 
     /*
@@ -68,7 +93,7 @@ public class Opcode {
     public void RegisterListCreator(){
         for(int i = 0; i < 14; i++){
             validSources.add("R" + i + ",");
-            validDestination.add("R" + i);
+            validDestinations.add("R" + i);
         }
     }
 
@@ -79,9 +104,11 @@ public class Opcode {
     public void StringOrInteger(ErrorHandler err, String word){
         if(word.matches("^-?\\d+$") || word.matches("^-?\\d+.$")){
             err.AddToErrorList(0);//error for immediate value
+            err.AddToProblemWordList(word);
         }
         else {
             err.AddToErrorList(1);//error for ill-formed operand
+            err.AddToProblemWordList(word);
         }
     }
 
@@ -89,12 +116,22 @@ public class Opcode {
      * If there are more or less words in a line then there should be,
      * this will alert the ErrorHandler.
      */
-    public void WordsInLine(ErrorHandler err, int wordCount){
-        if(wordCount > 4){
-            err.AddToErrorList(2);
+    public void WordsInLine(ErrorHandler err, int wordCount, String opcode){
+        if(opcode == "ASMD") {
+            if (wordCount > 4) {
+                err.AddToErrorList(2);
+            }
+            if (wordCount < 4) {
+                err.AddToErrorList(3);
+            }
         }
-        if(wordCount < 4){
-            err.AddToErrorList(3);
+        if(opcode == "MC"){
+            if (wordCount > 3) {
+                err.AddToErrorList(2);
+            }
+            if (wordCount < 3) {
+                err.AddToErrorList(3);
+            }
         }
     }
 

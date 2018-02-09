@@ -36,9 +36,8 @@ public class PALParser {
     public void Parser() {
         try {
             FileReader fileReader = new FileReader(fileName);
-            LogHeader(linesToLog);
-
             BufferedReader bufferedReader = new BufferedReader(fileReader);
+            LogHeader(linesToLog);
 
             while ((line = bufferedReader.readLine()) != null) {//lines still left in .pal
                 if(!line.isEmpty() || !line.trim().equals("")) {//if not an empty line
@@ -127,4 +126,5 @@ public class PALParser {
         list.add(header);
         list.add(" ");
     }
+
 }
