@@ -4,8 +4,7 @@ public class PALDriver {
     public static void main(String args[]){
 
         String fileName = "PRINTME";
-        ArrayList<String> opList = new ArrayList<String>();
-        ArrayList<String> branchList = new ArrayList<String>();
+        ArrayList<String> opList = new ArrayList<>();
 
         opList.add("ADD");
         opList.add("SUB");
@@ -16,9 +15,9 @@ public class PALDriver {
         opList.add("INC");
         opList.add("DEC");
 
-        branchList.add("BEQ");
-        branchList.add("BGT");
-        branchList.add("BR");
+        opList.add("BEQ");
+        opList.add("BGT");
+        opList.add("BR");
 
         PALParser parser1 = new PALParser (opList, fileName);
         parser1.Parser();

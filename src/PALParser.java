@@ -6,6 +6,9 @@ import java.util.*;
 
 public class PALParser {
 
+    Opcode opcode = new Opcode();//methods contained here will be
+                                 //used later to check for opcode rules
+
     private final String START = "STR";//valid opcode for beginning of .pal
     private final String END = "EXIT";//valid opcode for end of .pal
     private final int VALIDLABELLENGTH = 12;//max length of label
@@ -18,12 +21,11 @@ public class PALParser {
     private int currentLine = 0;//used for error messaging to the user
     private int wordsInLine = 0;//counts words in a line
 
-    private ArrayList<String> opList = new ArrayList<String>();//contains valid opcodes
-    private ArrayList<String> labelList = new ArrayList<String>();//contains valid labels for branches
-    private ArrayList<String> branchList = new ArrayList<String>();//contains valid branch opcodes
-    private List<String> linesToLog = new ArrayList<String>();//lines to be printed
+    private ArrayList<String> opList;//contains valid opcodes
+    private ArrayList<String> labelList = new ArrayList<>();//contains valid labels for branches
+    private List<String> linesToLog = new ArrayList<>();//lines to be printed
 
-    public PALParser(ArrayList<String> opList,String file){
+    public PALParser(ArrayList<String> opList, String file){
         this.opList = opList;
         this.fileName = file;
     }
@@ -40,10 +42,9 @@ public class PALParser {
 
             while ((line = bufferedReader.readLine()) != null) {//lines still left in .pal
                 if(!line.isEmpty() || !line.trim().equals("")) {//if not an empty line
-                    currentLine++;
-                    SentenceSplitter(line);
-                    linesToLog.add(currentLine + " " + line);
-                    wordsInLine = 0;
+                    currentLine++;//starts at 0, so add 1 first
+                    SentenceSplitter(line);//split line to find first opcode
+                    linesToLog.add(currentLine + " " + line);//add line number + line to linesToLog
                 }
             }
             FileWriter(linesToLog);//give report via .log
@@ -64,7 +65,7 @@ public class PALParser {
      */
     public void SentenceSplitter(String line) {
         String[] wordSplitter = line.split(" ");
-        String currentWord = " ";
+        String currentWord;
 
         for (String word : wordSplitter) {
             wordsInLine++;
@@ -72,8 +73,11 @@ public class PALParser {
             if (wordsInLine == 1) {
                 firstWord = currentWord;
                 linesToLog.add("First word: " + firstWord);
+                //this is where we will pass the opcode (first word)
+                //to the opcode class
             }
         }
+        wordsInLine = 0;//reset counter of words in a line
     }
 
     /*
