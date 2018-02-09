@@ -44,10 +44,9 @@ public class PALParser {
                 if(!line.isEmpty() || !line.trim().equals("")) {//if not an empty line
                     currentLine++;//starts at 0, so add 1 first
                     SentenceSplitter(line);//split line to find first opcode
-                    linesToLog.add(currentLine + " " + line);//add line number + line to linesToLog
                 }
             }
-            FileWriter(linesToLog);//give report via .log
+            FileWriter(linesToLog);//writes log array to .log file
             bufferedReader.close();//close process
         } catch (FileNotFoundException ex) {
             System.out.println(fileName + " doesn't exist");
@@ -72,9 +71,9 @@ public class PALParser {
             currentWord = word;
             if (wordsInLine == 1) {
                 firstWord = currentWord;
-                linesToLog.add("First word: " + firstWord);//to be removed (shows what first word is)
                 if(opList.contains(firstWord)){
-                    opcode.OpcodeHandler(firstWord, line, linesToLog);
+                    opcode.OpcodeHandler(firstWord, line, linesToLog, currentLine);
+                    break;
                 }
             }
         }

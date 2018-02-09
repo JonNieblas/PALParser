@@ -1,6 +1,5 @@
-HELLO
-
-DO I WORK?
-
-please,
-let me know.
+ADD R1, R2, 22
+SUB R1, R2, R3
+MUL R1, R2, R3, R4
+DIV R1, 33, R3
+ADD R1, R2
