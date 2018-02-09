@@ -24,7 +24,7 @@ public class ErrorHandler {
             errorList.remove(Integer.valueOf(1));
         }
         for(int i : errorList){
-            if(i == 1 || i == 0) {
+            if(i == 0 || i == 1 || i == 7 ) {
                 toLogList.add(Errors(i, problemWordList.get(0)));
             }
             else{
@@ -59,6 +59,9 @@ public class ErrorHandler {
         }
         else if(i == 6){
             error = "*** Branches to Non-Existent Label: " + word + " Is Not a Branch That Was Previously Created.";
+        }
+        else if(i == 7){
+            error = "*** Wrong Operand Type: String " + word + " Where Immediate Value Was Expected.";
         }
 
         return error;

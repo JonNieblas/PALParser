@@ -126,5 +126,4 @@ public class PALParser {
         list.add(header);
         list.add(" ");
     }
-
 }

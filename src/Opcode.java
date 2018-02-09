@@ -7,9 +7,9 @@ import java.util.List;
 
 public class Opcode {
 
-    private ArrayList<String> validSources = new ArrayList<String>();
-    private ArrayList<String> validDestinations = new ArrayList<String>();
-    String[] wordSplitter;
+    private ArrayList<String> validSources = new ArrayList<String>();//Registers with Commas
+    private ArrayList<String> validDestinations = new ArrayList<String>();//Registers without commas
+    private String[] wordSplitter;
 
     /*
      * creates arrays when new Opcode obj is created
@@ -33,7 +33,7 @@ public class Opcode {
             MOVEOpcode(line, linesToLog, lineCount);
         }
         else if(opcode.equals("INC") || opcode.equals("DEC")){
-            //direct it to correct method
+            IDOpcode(line, linesToLog, lineCount);
         }
         else if(opcode.equals("BEQ") || opcode.equals("BGT")){
 
@@ -53,38 +53,66 @@ public class Opcode {
         wordSplitter = line.split(" ");
 
         for (String word : wordSplitter){
-            if((!validSources.contains(word) && wordCount > 0 && wordCount < 3)
-                    || (!validDestinations.contains(word) && wordCount == 3 && !validSources.contains(word))){
-                word = word.replace(",", "");
-                StringOrInteger(err, word);
+            if(wordCount > 0 && wordCount < 3){
+                SourceChecker(err, word);
+            } else if(wordCount == 3){
+                DestinationChecker(err, word);
             }
             wordCount++;
         }
-
-        WordsInLine(err, wordCount, "ASMD");
-        linesToLog.add(lineCount + " " + line);
-        err.ErrorsToLog();//writes errors to .log file
+        LogListAdder(err, linesToLog, wordCount, lineCount, "ASMD", line);
     }
 
+    /*
+     * Observes a COPY line to make sure there are no errors.
+     * Reports errors to ErrorHandler.
+     */
     public void COPYOpcode(String line, List<String> linesToLog, int lineCount){
         int wordCount = 0;
         ErrorHandler err = new ErrorHandler(linesToLog);
         wordSplitter = line.split(" ");
         for(String word : wordSplitter){
-            if((wordCount == 1 && !validSources.contains(word)) || (wordCount == 2 && !validDestinations.contains(word)
-                    && !validSources.contains(word))){
-                StringOrInteger(err, word);
+            if(wordCount == 1){
+                SourceChecker(err, word);
+            } else if(wordCount == 2){
+                DestinationChecker(err, word);
             }
             wordCount++;
         }
-
-        WordsInLine(err, wordCount, "MC");
-        linesToLog.add(lineCount + " " + line);
-        err.ErrorsToLog();
+        LogListAdder(err, linesToLog, wordCount, lineCount, "MC", line);
     }
 
+    /*
+     * Observes a MOVE line to make sure there are no errors.
+     * Reports errors to ErrorHandler
+     *
+     */
     public void MOVEOpcode(String line, List<String> linesToLog, int lineCount){
+        int wordCount = 0;
+        ErrorHandler err = new ErrorHandler(linesToLog);
+        wordSplitter = line.split(" ");
+        for(String word : wordSplitter){
+            if(wordCount == 1){
+                ShouldBeInteger(err, word);
+            } else if(wordCount == 2){
+                DestinationChecker(err, word);
+            }
+            wordCount++;
+        }
+        LogListAdder(err, linesToLog, wordCount, lineCount, "MC", line);
+    }
 
+    public void IDOpcode(String line, List<String> linesToLog, int lineCount){
+        int wordCount = 0;
+        ErrorHandler err = new ErrorHandler(linesToLog);
+        wordSplitter = line.split(" ");
+        for(String word : wordSplitter){
+            if(wordCount == 1){
+                DestinationChecker(err, word);
+            }
+            wordCount++;
+        }
+        LogListAdder(err, linesToLog, wordCount, lineCount, "ID", line);
     }
 
     /*
@@ -98,16 +126,59 @@ public class Opcode {
     }
 
     /*
+     * Adds correct information to linesToLog ArrayList, as well as error ArrayList
+     */
+    public void LogListAdder(ErrorHandler err, List<String> linesToLog, int wordCount, int lineCount, String opcode, String line){
+        WordsInLine(err, wordCount, opcode);
+        linesToLog.add(lineCount + " " + line);
+        err.ErrorsToLog();
+    }
+
+    /*
+     * Checks that each source is of the correct type
+     * FIX: If one of the sources doesn't have a comma, create a different type of error code for it
+     */
+    public void SourceChecker(ErrorHandler err, String word){
+        if(!validSources.contains(word)){
+            word = word.replace(",", "");
+            OperandStringOrInteger(err, word);
+        }
+    }
+
+    /*
+     * Checks that each destination is of the correct type.
+     */
+    public void DestinationChecker(ErrorHandler err, String word){
+        if(!validDestinations.contains(word) && !validSources.contains(word)) {
+            word = word.replace(",", "");
+            OperandStringOrInteger(err, word);
+        }
+    }
+
+    /*
      * Checks to see if the incorrect operand is an immediate value or an ill-formed operand.
      * Second comparison in if statement catches word with comma (EX: R1,; 22,; wow,;
      */
-    public void StringOrInteger(ErrorHandler err, String word){
-        if(word.matches("^-?\\d+$") || word.matches("^-?\\d+.$")){
+    public void OperandStringOrInteger(ErrorHandler err, String word){
+        word = word.replace(",", "");
+        if(word.matches("^-?\\d+$")){
             err.AddToErrorList(0);//error for immediate value
             err.AddToProblemWordList(word);
         }
         else {
             err.AddToErrorList(1);//error for ill-formed operand
+            err.AddToProblemWordList(word);
+        }
+    }
+
+    /*
+     * Checks that an string is an immediate value.
+     * If not, it informs the ErrorHandler.
+     */
+    public void ShouldBeInteger(ErrorHandler err, String word){
+        word = word.replace(",", "");
+        if(!word.matches("^-?\\d+$")){
+            err.AddToErrorList(7);//error for immediate value
             err.AddToProblemWordList(word);
         }
     }
@@ -120,16 +191,19 @@ public class Opcode {
         if(opcode == "ASMD") {
             if (wordCount > 4) {
                 err.AddToErrorList(2);
-            }
-            if (wordCount < 4) {
+            } else if (wordCount < 4) {
                 err.AddToErrorList(3);
             }
-        }
-        if(opcode == "MC"){
+        } else if(opcode == "MC"){
             if (wordCount > 3) {
                 err.AddToErrorList(2);
+            } else if (wordCount < 3) {
+                err.AddToErrorList(3);
             }
-            if (wordCount < 3) {
+        } else if(opcode == "ID"){
+            if(wordCount > 2){
+                err.AddToErrorList(2);
+            } else if(wordCount < 2){
                 err.AddToErrorList(3);
             }
         }
