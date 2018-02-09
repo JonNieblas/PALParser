@@ -24,7 +24,7 @@ public class ErrorHandler {
             errorList.remove(Integer.valueOf(1));
         }
         for(int i : errorList){
-            if(i == 0 || i == 1 || i == 7 ) {
+            if(i == 0 || i == 1 || i == 4 || i == 5 || i == 6 || i == 7 ) {
                 toLogList.add(Errors(i, problemWordList.get(0)));
             }
             else{
@@ -50,8 +50,8 @@ public class ErrorHandler {
             error = "*** Too Few Operands: You Have Not Met The Valid Number Of Operands For This Opcode.";
         }
         else if(i == 4){
-            error = "*** Ill-Formed Label " + word + ": Label Must Be At Most 12 Characters Long With No " +
-                    "Spaces or Digits.";
+            error = "*** Ill-Formed Label: " + word + " Must Be At Most 12 Characters Long And Contain One Colon. " +
+                    "\n*** Colon Must Be At The End Of The Label.";
         }
         else if(i == 5){
             error = "*** Invalid Opcode: " + word + " Is Not a Valid Opcode. Please Review Valid Opcodes " +

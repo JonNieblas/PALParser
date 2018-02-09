@@ -36,15 +36,15 @@ public class Opcode {
             IDOpcode(line, linesToLog, lineCount);
         }
         else if(opcode.equals("BEQ") || opcode.equals("BGT")){
-
+            //BEBGOpcode(line, linesToLog, labelList, lineCount);
         }
         else if(opcode.equals("BR")){
-
+            //BROpcode (line, linesToLog, labelList, lineCount);
         }
     }
 
     /*
-     * Observes an ASMD line to make sure there are no errors.
+     * Observes an ADD/SUB/MUL/DIV line to make sure there are no errors.
      * Reports errors to ErrorHandler.
      */
     public void ASMDOpcode(String line, List<String> linesToLog, int lineCount){
@@ -84,7 +84,7 @@ public class Opcode {
 
     /*
      * Observes a MOVE line to make sure there are no errors.
-     * Reports errors to ErrorHandler
+     * Reports errors to ErrorHandler.
      *
      */
     public void MOVEOpcode(String line, List<String> linesToLog, int lineCount){
@@ -102,6 +102,11 @@ public class Opcode {
         LogListAdder(err, linesToLog, wordCount, lineCount, "MC", line);
     }
 
+    /*
+     * Checks for INC/DEC line to make sure there are no errors.
+     * Uses DestinationChecker instead of SourceChecker bc there is only one operand in this opcode.
+     * Reports errors to ErrorHandler.
+     */
     public void IDOpcode(String line, List<String> linesToLog, int lineCount){
         int wordCount = 0;
         ErrorHandler err = new ErrorHandler(linesToLog);

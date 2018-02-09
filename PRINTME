@@ -1,6 +1,7 @@
 ADD R1, R2, R2
 SUB R1, R2 R3
 
+new label:
 MUL R1, R2, R3, R4
 
 DIV R1, 33, R3
@@ -16,3 +17,10 @@ MOVE 14, wowie
 
 INC 14
 DEC R1
+INC R1, R2
+
+Add R1, R2
+
+label: here
+
+BGT new label:

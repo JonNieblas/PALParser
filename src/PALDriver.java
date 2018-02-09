@@ -14,7 +14,6 @@ public class PALDriver {
         opList.add("MOVE");
         opList.add("INC");
         opList.add("DEC");
-
         opList.add("BEQ");
         opList.add("BGT");
         opList.add("BR");

@@ -18,7 +18,7 @@ public class PALParser {
     private String line = null;//current line being parsed
     private String firstWord;//first word of each line (used to find opcode or label)
     private String fileName;// file to be named from main
-    private int currentLine = 0;//used for error messaging to the user
+    private int currentLine = 1;//used for error messaging to the user
     private int wordsInLine = 0;//counts words in a line
 
     private ArrayList<String> opList;//contains valid opcodes
@@ -40,10 +40,7 @@ public class PALParser {
             LogHeader(linesToLog);
 
             while ((line = bufferedReader.readLine()) != null) {//lines still left in .pal
-                if(!line.isEmpty() || !line.trim().equals("")) {//if not an empty line
-                    currentLine++;//starts at 0, so add 1 first
-                    SentenceSplitter(line);//split line to find first opcode
-                }
+                LabelOrOpcode(line);
             }
             FileWriter(linesToLog);//writes log array to .log file
             bufferedReader.close();//close process
@@ -61,7 +58,7 @@ public class PALParser {
      * Each source needs to be followed by a comma
      * possibly make sentence splitters for each operand
      */
-    public void SentenceSplitter(String line) {
+    public void OpcodeChecker(String line, ErrorHandler err) {
         String[] wordSplitter = line.split(" ");
         String currentWord;
 
@@ -73,22 +70,39 @@ public class PALParser {
                 if(opList.contains(firstWord)){
                     opcode.OpcodeHandler(firstWord, line, linesToLog, currentLine);
                     break;
+                }else{
+                    err.AddToErrorList(5);
+                    err.AddToProblemWordList(word);
+                    linesToLog.add(currentLine + " " + line);
+                    err.ErrorsToLog();
+                    break;
                 }
             }
         }
-
-        //possibly move to Opcode class?
-        //check for label
-        //if(firstWord ends with colon and wordsInLine == 1 and follows label rules)
-            //assign to label list
-        //else if(... doesn't follow label rules)
-            //linesToLog.add(line);
-            //linesToLog.add(ill-formed label);
-        //else
-            //linesToLog.add(line);
-            //linesToLog.add(invalid opcode);
-
         wordsInLine = 0;//reset counter of words in a line
+    }
+
+    /*
+     * Checks that a line is not empty. If it is not, then it checks to see if the line
+     * is a label or opcode.
+     * If neither, it throws an error.
+     */
+    public void LabelOrOpcode(String line) {
+        ErrorHandler err = new ErrorHandler(linesToLog);
+        if (!line.isEmpty() || !line.trim().equals("")) {//if not an empty line
+            if (line.endsWith(":") && line.length() < 12) {//is label
+                labelList.add(line);
+                linesToLog.add(currentLine + " " + line);
+            } else if ((line.contains(":") && !line.endsWith(":")) || (line.contains(":") && line.length() > 11)){
+                err.AddToErrorList(4);
+                err.AddToProblemWordList(line);
+                linesToLog.add(currentLine + " " + line);
+                err.ErrorsToLog();
+            } else{
+                OpcodeChecker(line, err);//split line to find first opcode
+            }
+            currentLine++;
+        }
     }
 
     /*
