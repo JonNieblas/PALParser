@@ -10,19 +10,17 @@ public class PALParser {
 
     private final String START = "SRT";//valid opcode for beginning of .pal
     private final String END = "END";//valid opcode for end of .pal
-    private int startCounter = 0;
+    private int startCounter, opCounter = 0;
 
     private String line = " ";//current line being parsed without comments
-    private String firstWord;//first word of each line (used to find opcode or label)
-    private String fileName;// file to be named from main
-    private String fileNameAppended;// file name without extension
-    private String originalLine;//line with comments included
+    private String firstWord, fileName, fileNameAppended, originalLine;
     private int currentLine = 1;//used for error messaging to the user
     private int wordsInLine = 0;//counts words in a line
 
     private ArrayList<String> opList;//contains valid opcodes
-    private ArrayList<String> labelList = new ArrayList<>();//contains valid labels for branches
+    private ArrayList<String> labelList= new ArrayList<>();//contains valid labels for branches
     private List<String> linesToLog = new ArrayList<>();//lines to be printed
+    private ArrayList<Integer> numberOfErrors = new ArrayList<>();
 
     public PALParser(ArrayList<String> opList, String file){
         this.opList = opList;
@@ -57,6 +55,7 @@ public class PALParser {
                 }
             }
             CheckLastLine();//see if last line is valid
+            LogSummary(numberOfErrors);
             FileWriter(linesToLog);//writes log array to .log file
             bufferedReader.close();//close process
         } catch (FileNotFoundException ex) {
@@ -74,7 +73,7 @@ public class PALParser {
         String lastLine = originalLine.trim();
         if(!lastLine.equals(END)){
             err.AddToErrorList(14);
-            err.ErrorsToLog();
+            err.ErrorsToLog(numberOfErrors);
         }
     }
 
@@ -95,10 +94,13 @@ public class PALParser {
                 if(opList.contains(firstWord) && startCounter == 0){
                     err.AddToErrorList(13);
                     linesToLog.add(currentLine + " " + originalLine);
-                    err.ErrorsToLog();
+                    err.ErrorsToLog(numberOfErrors);
                     break;
                 }else if(opList.contains(firstWord)){
-                    opcode.OpcodeHandler(firstWord, line, linesToLog, currentLine, labelList, originalLine);
+                    if(opCounter == 0){
+                        opCounter++;
+                    }
+                    opcode.OpcodeHandler(firstWord, line, linesToLog, currentLine, labelList, originalLine, numberOfErrors);
                     break;
                 } else if(firstWord.equals(END)){
                     ENDHandler(line, err);
@@ -106,11 +108,22 @@ public class PALParser {
                 } else if(firstWord.equals(START)){
                     SRTHandler(line, err);
                     break;
-                } else{
+                } else if(firstWord.equals("DEF")){
+                    if(opCounter == 1){
+                        err.AddToErrorList(15);
+                        linesToLog.add(currentLine + " " + originalLine);
+                        err.ErrorsToLog(numberOfErrors);
+                        break;
+                    }
+                    else{
+                        opcode.OpcodeHandler(firstWord, line, linesToLog, currentLine, labelList, originalLine, numberOfErrors);
+                    }
+                }
+                else{
                     err.AddToErrorList(5);
                     err.AddToProblemWordList(word);
                     linesToLog.add(currentLine + " " + originalLine);
-                    err.ErrorsToLog();
+                    err.ErrorsToLog(numberOfErrors);
                     break;
                 }
             }
@@ -124,11 +137,11 @@ public class PALParser {
     public void SRTHandler(String line, ErrorHandler err){
         String newLine = line.replace(" ", "");
         if(newLine.length() > 3){
-            err.ENDOrSRT(line, 1, currentLine, linesToLog);
+            err.ENDOrSRT(line, 1, currentLine, linesToLog, numberOfErrors);
         } else if(startCounter == 1){
             err.AddToErrorList(11);
             linesToLog.add(currentLine + " " + line);
-            err.ErrorsToLog();
+            err.ErrorsToLog(numberOfErrors);
         } else{
             linesToLog.add(currentLine + " " + originalLine);
             startCounter = 1;
@@ -141,14 +154,15 @@ public class PALParser {
     public void ENDHandler(String line, ErrorHandler err){
         String newLine = line.replace(" ", "");
         if(newLine.length() > 3){
-            err.ENDOrSRT(line, 0, currentLine, linesToLog);
+            err.ENDOrSRT(line, 0, currentLine, linesToLog, numberOfErrors);
         } else if(startCounter == 0) {
             err.AddToErrorList(12);
             linesToLog.add(currentLine + " " + line);
-            err.ErrorsToLog();
+            err.ErrorsToLog(numberOfErrors);
         }else{
             linesToLog.add(currentLine + " " + originalLine);
             startCounter = 0;
+            opCounter = 0;
         }
     }
 
@@ -162,7 +176,7 @@ public class PALParser {
             err.AddToErrorList(4);
             err.AddToProblemWordList(line);
             linesToLog.add(currentLine + " " + originalLine);
-            err.ErrorsToLog();
+            err.ErrorsToLog(numberOfErrors);
         }
     }
     /*
@@ -220,5 +234,98 @@ public class PALParser {
                             + myName + " || " + courseName);
         list.add(header);
         list.add(" ");
+        list.add("PAL Program Listing:");
+        list.add(" ");
+    }
+
+    /*
+     * Counts each individual error type present.
+     * Reports a summary of the total count of errors, and how many of each type
+     * were present (if at all).
+     */
+    public void LogSummary(ArrayList<Integer> numberOfErrors){
+        int err0 = 0, err1 = 0, err2 = 0, err3 = 0, err4 = 0, err5 = 0, err6 = 0, err7 = 0,
+                err8 = 0, err9 = 0, err10 = 0, err11 = 0, err12 = 0, err13 = 0, err14 = 0, err15 = 0;
+        for(int i : numberOfErrors){
+            switch(i){
+                case 0: err0++;
+                    break;
+                case 1: err1++;
+                    break;
+                case 2: err2++;
+                    break;
+                case 3: err3++;
+                    break;
+                case 4: err4++;
+                    break;
+                case 5: err5++;
+                    break;
+                case 6: err6++;
+                    break;
+                case 7: err7++;
+                    break;
+                case 8: err8++;
+                    break;
+                case 9: err9++;
+                    break;
+                case 10: err10++;
+                    break;
+                case 11: err11++;
+                    break;
+                case 12: err12++;
+                    break;
+                case 13: err13++;
+                    break;
+                case 14: err14++;
+                    break;
+                case 15: err15++;
+                    break;
+            }
+        }
+        int totalErrors = err0 + err1 + err2 + err3 + err4 + err5 + err6 + err7 + err8 + err9 + err10 + err11
+                            + err12 + err13 + err14 + err15;
+
+        linesToLog.add(" ");
+        linesToLog.add("Summary ----------");
+        linesToLog.add(" ");
+        linesToLog.add("total Errors = " + totalErrors);
+
+        if(err0 > 0){
+            linesToLog.add(" " + err0 + " " + "Wrong Operand Type(s)");
+        } if(err1 > 0){
+            linesToLog.add(" " + err1 + " " + "Ill-Formed Operand(s)");
+        } if(err2 > 0){
+            linesToLog.add(" " + err2 + " " + "Too Many Operands");
+        } if(err3 > 0){
+            linesToLog.add(" " + err3 + " " + "Too Few Operands");
+        } if(err4 > 0){
+            linesToLog.add(" " + err4 + " " + "Ill-Formed Label(s)");
+        } if(err5 > 0){
+            linesToLog.add(" " + err5 + " " + "Invalid Opcode(s)");
+        } if(err6 > 0){
+            linesToLog.add(" " + err6 + " " + "Branches to Non-Existent Label(s)");
+        } if(err7 > 0){
+            linesToLog.add(" " + err7 + " " + "Wrong Operand Type(s)");
+        } if(err8 > 0){
+            linesToLog.add(" " + err8 + " " + "Ill-Formed Exit Opcode(s)");
+        } if(err9 > 0){
+            linesToLog.add(" " + err9 + " " + "Ill-Formed Start Opcode(s)");
+        } if(err10 > 0){
+            linesToLog.add(" " + err10 + " " + "Missing Label(s) in Branch(es)");
+        } if(err11 > 0){
+            linesToLog.add(" " + err11 + " " + "Misplaced SRT(s)");
+        } if(err12 > 0){
+            linesToLog.add(" " + err12 + " " + "Misplaced END(s)");
+        } if(err13 > 0){
+            linesToLog.add(" " + err13 + " " + "Code(s) Outside of Program");
+        } if(err14 > 0){
+            linesToLog.add(" " + err14 + " " + "END Not Detected");
+        } if(err15 > 0){
+            linesToLog.add(" " + err15 + " " + "Invalid DEF(s)");
+        } if(totalErrors > 0){
+            linesToLog.add("Processing Complete - PAL program is not valid.");
+        } else{
+            linesToLog.add("Processing Complete - PAL program checks out.");
+        }
     }
 }

@@ -8,6 +8,7 @@ import java.util.List;
 public class Opcode {
 
     private ArrayList<String> validRegisters = new ArrayList<>();
+    private ArrayList<String> validVariables = new ArrayList<>();
     private String[] wordSplitter;
 
     /*
@@ -24,7 +25,7 @@ public class Opcode {
      * the correct method, along with the linesToLog list.
      */
     public void OpcodeHandler(String opcode, String line, List<String> linesToLog, int lineCount,
-                                ArrayList<String> labelList, String originalLine){
+                                ArrayList<String> labelList, String originalLine, ArrayList<Integer> numOfErr){
         String newLine = line.replace(opcode, "");//get rid of opcode
         newLine = newLine.replace(" ", "");//get rid of spaces
 
@@ -32,19 +33,21 @@ public class Opcode {
             case "ADD":
             case "SUB":
             case "MUL":
-            case "DIV": ASMDOpcode(newLine, linesToLog, lineCount, originalLine);
+            case "DIV": ASMDOpcode(newLine, linesToLog, lineCount, originalLine, numOfErr);
                 break;
-            case "COPY": COPYOpcode(newLine, linesToLog, lineCount, originalLine);
+            case "COPY": COPYOpcode(newLine, linesToLog, lineCount, originalLine, numOfErr);
                 break;
-            case "MOVE": MOVEOpcode(newLine, linesToLog, lineCount, originalLine);
+            case "MOVE": MOVEOpcode(newLine, linesToLog, lineCount, originalLine, numOfErr);
                 break;
             case "INC":
-            case "DEC": IDOpcode(newLine, linesToLog, lineCount, originalLine);
+            case "DEC": IDOpcode(newLine, linesToLog, lineCount, originalLine, numOfErr);
                 break;
             case "BEQ":
-            case "BGT": BEBGOpcode(newLine, linesToLog, lineCount, labelList, originalLine);
+            case "BGT": BEBGOpcode(newLine, linesToLog, lineCount, labelList, originalLine, numOfErr);
                 break;
-            case "BR": BROpcode (line, linesToLog, lineCount, labelList, originalLine);
+            case "BR": BROpcode (newLine, linesToLog, lineCount, labelList, originalLine, numOfErr);
+                break;
+            case "DEF": DEFOpcode(newLine, linesToLog, lineCount, originalLine, numOfErr);
                 break;
         }
     }
@@ -53,7 +56,7 @@ public class Opcode {
      * Observes an ADD/SUB/MUL/DIV line to make sure there are no errors.
      * Reports errors to ErrorHandler.
      */
-    public void ASMDOpcode(String line, List<String> linesToLog, int lineCount, String originalLine){
+    public void ASMDOpcode(String line, List<String> linesToLog, int lineCount, String originalLine, ArrayList<Integer> numOfErr){
         int wordCount = 0;
         ErrorHandler err = new ErrorHandler(linesToLog);
         wordSplitter = line.split(",");//changed to comma
@@ -64,14 +67,14 @@ public class Opcode {
             }
             wordCount++;
         }
-        LogListAdder(err, linesToLog, wordCount, lineCount, "ASMD", originalLine);
+        LogListAdder(err, linesToLog, wordCount, lineCount, "ASMD", originalLine, numOfErr);
     }
 
     /*
      * Observes a COPY line to make sure there are no errors.
      * Reports errors to ErrorHandler.
      */
-    public void COPYOpcode(String line, List<String> linesToLog, int lineCount, String originalLine){
+    public void COPYOpcode(String line, List<String> linesToLog, int lineCount, String originalLine, ArrayList<Integer> numOfErr){
         int wordCount = 0;
         ErrorHandler err = new ErrorHandler(linesToLog);
         wordSplitter = line.split(",");
@@ -79,7 +82,7 @@ public class Opcode {
             RegisterChecker(err, word);
             wordCount++;
         }
-        LogListAdder(err, linesToLog, wordCount, lineCount, "MC", originalLine);
+        LogListAdder(err, linesToLog, wordCount, lineCount, "MC", originalLine, numOfErr);
     }
 
     /*
@@ -87,7 +90,7 @@ public class Opcode {
      * Reports errors to ErrorHandler.
      *
      */
-    public void MOVEOpcode(String line, List<String> linesToLog, int lineCount, String originalLine){
+    public void MOVEOpcode(String line, List<String> linesToLog, int lineCount, String originalLine, ArrayList<Integer> numOfErr){
         int wordCount = 0;
         ErrorHandler err = new ErrorHandler(linesToLog);
         wordSplitter = line.split(",");
@@ -99,7 +102,7 @@ public class Opcode {
             }
             wordCount++;
         }
-        LogListAdder(err, linesToLog, wordCount, lineCount, "MC", originalLine);
+        LogListAdder(err, linesToLog, wordCount, lineCount, "MC", originalLine, numOfErr);
     }
 
     /*
@@ -107,7 +110,7 @@ public class Opcode {
      * Uses DestinationChecker instead of SourceChecker bc there is only one operand in this opcode.
      * Reports errors to ErrorHandler.
      */
-    public void IDOpcode(String line, List<String> linesToLog, int lineCount, String originalLine){
+    public void IDOpcode(String line, List<String> linesToLog, int lineCount, String originalLine, ArrayList<Integer> numOfErr){
         int wordCount = 0;
         ErrorHandler err = new ErrorHandler(linesToLog);
         wordSplitter = line.split(",");
@@ -115,7 +118,7 @@ public class Opcode {
             RegisterChecker(err, word);
             wordCount++;
         }
-        LogListAdder(err, linesToLog, wordCount, lineCount, "ID", originalLine);
+        LogListAdder(err, linesToLog, wordCount, lineCount, "ID", originalLine, numOfErr);
     }
 
     /*
@@ -123,7 +126,7 @@ public class Opcode {
      * Reports errors if not.
      */
     public void BEBGOpcode(String line, List<String> linesToLog, int lineCount, ArrayList<String> labelList,
-                           String originalLine){
+                           String originalLine, ArrayList<Integer> numOfErr){
         int wordCount = 0;
         String label = LabelFinder(originalLine);
         ErrorHandler err = new ErrorHandler(linesToLog);
@@ -143,7 +146,7 @@ public class Opcode {
             }
         }
         LabelChecker(err, label, labelList);
-        LogListAdder(err, linesToLog, wordCount, lineCount, "BEBG", originalLine);
+        LogListAdder(err, linesToLog, wordCount, lineCount, "BEBG", originalLine, numOfErr);
     }
 
     /*
@@ -151,7 +154,7 @@ public class Opcode {
      * Reports errors if not.
      */
     public void BROpcode(String line, List<String> linesToLog, int lineCount, ArrayList<String> labelList,
-                         String originalLine){
+                         String originalLine, ArrayList<Integer> numOfErr){
         int wordCount = 0;
         String label = LabelFinder(originalLine);
         ErrorHandler err = new ErrorHandler(linesToLog);
@@ -166,7 +169,22 @@ public class Opcode {
             wordCount++;
         }
         LabelChecker(err, label, labelList);
-        LogListAdder(err, linesToLog, wordCount, lineCount, "BR", originalLine);
+        LogListAdder(err, linesToLog, wordCount, lineCount, "BR", originalLine, numOfErr);
+    }
+
+    public void DEFOpcode(String line, List<String> linesToLog, int lineCount, String originalLine, ArrayList<Integer> numOfErr){
+        int wordCount = 0;
+        ErrorHandler err = new ErrorHandler(linesToLog);
+        wordSplitter = line.split(",");
+        for(String word : wordSplitter){
+            if(wordCount == 0){
+                validVariables.add(word);
+            }if(wordCount == 1){
+                ShouldBeInteger(err, word);
+            }
+            wordCount++;
+        }
+        LogListAdder(err, linesToLog, wordCount, lineCount, "DEF", originalLine, numOfErr);
     }
 
     /*
@@ -192,17 +210,18 @@ public class Opcode {
     /*
      * Adds correct information to linesToLog ArrayList, as well as error ArrayList
      */
-    public void LogListAdder(ErrorHandler err, List<String> linesToLog, int wordCount, int lineCount, String opcode, String originalLine){
+    public void LogListAdder(ErrorHandler err, List<String> linesToLog, int wordCount, int lineCount,
+                             String opcode, String originalLine, ArrayList<Integer> numOfErr){
         WordsInLine(err, wordCount, opcode);
         linesToLog.add(lineCount + " " + originalLine);
-        err.ErrorsToLog();
+        err.ErrorsToLog(numOfErr);
     }
 
     /*
      * Checks that Registers being used in Source/Destination spots are valid
      */
     public void RegisterChecker(ErrorHandler err, String word){
-        if(!validRegisters.contains(word)){
+        if(!validRegisters.contains(word) && !validVariables.contains(word)){
             OperandStringOrInteger(err, word);
         }
     }
@@ -234,7 +253,7 @@ public class Opcode {
     }
 
     /*
-     * Checks that an string is an immediate value.
+     * Checks that a string is an immediate value.
      * If not, it informs the ErrorHandler.
      */
     public void ShouldBeInteger(ErrorHandler err, String word){
@@ -256,6 +275,7 @@ public class Opcode {
                 WordCountError(3, wordCount, err);
                 break;
             case "MC":
+            case "DEF":
                 WordCountError(2, wordCount, err);
                 break;
             case "ID":
