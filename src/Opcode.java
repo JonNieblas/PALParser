@@ -14,7 +14,9 @@ public class Opcode {
      * creates arrays when new Opcode obj is created
      */
     public Opcode (){
-        RegisterListCreator();
+        for(int i = 0; i < 8; i++){//create register list
+            validRegisters.add("R" + i);
+        }
     }
 
     /*
@@ -22,21 +24,28 @@ public class Opcode {
      * the correct method, along with the linesToLog list.
      */
     public void OpcodeHandler(String opcode, String line, List<String> linesToLog, int lineCount,
-                              ArrayList<String> labelList, String originalLine){
+                                ArrayList<String> labelList, String originalLine){
         String newLine = line.replace(opcode, "");//get rid of opcode
-            newLine = newLine.replace(" ", "");//get rid of spaces
-        if(opcode.equals("ADD") || opcode.equals("SUB") || opcode.equals("MUL") || opcode.equals("DIV")){
-            ASMDOpcode(newLine, linesToLog, lineCount, originalLine);
-        } else if(opcode.equals("COPY")){
-            COPYOpcode(newLine, linesToLog, lineCount, originalLine);
-        } else if(opcode.equals("MOVE")){
-            MOVEOpcode(newLine, linesToLog, lineCount, originalLine);
-        } else if(opcode.equals("INC") || opcode.equals("DEC")){
-            IDOpcode(newLine, linesToLog, lineCount, originalLine);
-        } else if(opcode.equals("BEQ") || opcode.equals("BGT")){
-            BEBGOpcode(newLine, linesToLog, lineCount, labelList, originalLine);
-        } else if(opcode.equals("BR")){
-            BROpcode (line, linesToLog, lineCount, labelList, originalLine);
+        newLine = newLine.replace(" ", "");//get rid of spaces
+
+        switch(opcode){
+            case "ADD":
+            case "SUB":
+            case "MUL":
+            case "DIV": ASMDOpcode(newLine, linesToLog, lineCount, originalLine);
+                break;
+            case "COPY": COPYOpcode(newLine, linesToLog, lineCount, originalLine);
+                break;
+            case "MOVE": MOVEOpcode(newLine, linesToLog, lineCount, originalLine);
+                break;
+            case "INC":
+            case "DEC": IDOpcode(newLine, linesToLog, lineCount, originalLine);
+                break;
+            case "BEQ":
+            case "BGT": BEBGOpcode(newLine, linesToLog, lineCount, labelList, originalLine);
+                break;
+            case "BR": BROpcode (line, linesToLog, lineCount, labelList, originalLine);
+                break;
         }
     }
 
@@ -123,6 +132,12 @@ public class Opcode {
             if(wordCount < 2){
                 RegisterChecker(err, word);
                 wordCount++;
+            }else if (wordCount == 2){
+                if(!validRegisters.contains(word) && !word.contains(":")){
+                    err.AddToErrorList(10);
+                    err.AddToProblemWordList(word);
+                }
+                wordCount++;
             }else{
                 wordCount++;
             }
@@ -150,20 +165,8 @@ public class Opcode {
             }
             wordCount++;
         }
-
-
-
         LabelChecker(err, label, labelList);
         LogListAdder(err, linesToLog, wordCount, lineCount, "BR", originalLine);
-    }
-
-    /*
-     * Creates an ArrayList of valid registers for both the source & destination registers
-     */
-    public void RegisterListCreator(){
-        for(int i = 0; i < 8; i++){
-            validRegisters.add("R" + i);
-        }
     }
 
     /*
@@ -195,6 +198,9 @@ public class Opcode {
         err.ErrorsToLog();
     }
 
+    /*
+     * Checks that Registers being used in Source/Destination spots are valid
+     */
     public void RegisterChecker(ErrorHandler err, String word){
         if(!validRegisters.contains(word)){
             OperandStringOrInteger(err, word);
@@ -244,24 +250,28 @@ public class Opcode {
      * this will alert the ErrorHandler.
      */
     public void WordsInLine(ErrorHandler err, int wordCount, String opcode){
-        if(opcode.equals("ASMD") || opcode.equals("BEBG")){
-            if (wordCount > 3) {
-                err.AddToErrorList(2);
-            } else if (wordCount < 3) {
-                err.AddToErrorList(3);
-            }
-        } else if(opcode.equals("MC")){
-            if (wordCount > 2) {
-                err.AddToErrorList(2);
-            } else if (wordCount < 2) {
-                err.AddToErrorList(3);
-            }
-        } else if(opcode.equals("ID") || opcode.equals("BR")){
-            if(wordCount > 1){
-                err.AddToErrorList(2);
-            } else if(wordCount < 1){
-                err.AddToErrorList(3);
-            }
+        switch(opcode){
+            case "ASMD":
+            case "BEBG":
+                WordCountError(3, wordCount, err);
+                break;
+            case "MC":
+                WordCountError(2, wordCount, err);
+                break;
+            case "ID":
+            case "BR":
+                WordCountError(1, wordCount, err);
+                break;
         }
+    }
+
+    /*
+     * Based on which case is chosen, helps to define if a line has an error in length
+     */
+    public void WordCountError(int i, int wordCount, ErrorHandler err){
+        if(wordCount > i){
+            err.AddToErrorList(2);
+        } else if(wordCount < i){
+            err.AddToErrorList(3); }
     }
 }

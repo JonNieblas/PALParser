@@ -7,18 +7,18 @@ import java.util.*;
 public class PALParser {
 
     Opcode opcode = new Opcode();//methods contained here will be
-                                 //used later to check for opcode rules
 
     private final String START = "SRT";//valid opcode for beginning of .pal
     private final String END = "END";//valid opcode for end of .pal
+    private int startCounter = 0;
 
     private String line = " ";//current line being parsed without comments
     private String firstWord;//first word of each line (used to find opcode or label)
     private String fileName;// file to be named from main
+    private String fileNameAppended;// file name without extension
     private String originalLine;//line with comments included
     private int currentLine = 1;//used for error messaging to the user
     private int wordsInLine = 0;//counts words in a line
-    private String[] wordSplitter;
 
     private ArrayList<String> opList;//contains valid opcodes
     private ArrayList<String> labelList = new ArrayList<>();//contains valid labels for branches
@@ -27,6 +27,7 @@ public class PALParser {
     public PALParser(ArrayList<String> opList, String file){
         this.opList = opList;
         this.fileName = file;
+        fileNameAppended = file.replace(".pal", "");
     }
 
     /*
@@ -41,21 +42,39 @@ public class PALParser {
             String newLine;
 
             while ((line = bufferedReader.readLine()) != null) {//lines still left in .pal
-                if(line.contains(";")) {//check for comments
+                if(line.contains(";") && line.lastIndexOf(';')-1 > -1) {//check for comments
                     comment = line.substring(line.lastIndexOf(';') - 1);//will take comment
                     newLine = line.replace(comment, "");//will remove comment from line
                 }else{
                     newLine = line;
                 }
-                originalLine = line;
-                LabelOrOpcode(newLine);
+                if(newLine.contains(";")){//line that only contains comment
+                    linesToLog.add(currentLine + " " + newLine);
+                    currentLine++;
+                }else {
+                    originalLine = line;
+                    LabelOrOpcode(newLine);
+                }
             }
+            CheckLastLine();//see if last line is valid
             FileWriter(linesToLog);//writes log array to .log file
             bufferedReader.close();//close process
         } catch (FileNotFoundException ex) {
             System.out.println(fileName + " doesn't exist");
         } catch (IOException ex) {
             System.out.println("error reading file " + fileName);
+        }
+    }
+
+    /*
+     * Checks to see that PAL program's last opcode is "END"
+     */
+    public void CheckLastLine(){
+        ErrorHandler err = new ErrorHandler(linesToLog);
+        String lastLine = originalLine.trim();
+        if(!lastLine.equals(END)){
+            err.AddToErrorList(14);
+            err.ErrorsToLog();
         }
     }
 
@@ -68,18 +87,23 @@ public class PALParser {
      */
     public void OpcodeChecker(String line, ErrorHandler err) {
 
-        wordSplitter = line.split(" ");
+        String[] wordSplitter = line.split(" ");
         for (String word : wordSplitter) {
             wordsInLine++;
             firstWord = word;
             if (wordsInLine == 1) {
-                if(opList.contains(firstWord)){
+                if(opList.contains(firstWord) && startCounter == 0){
+                    err.AddToErrorList(13);
+                    linesToLog.add(currentLine + " " + originalLine);
+                    err.ErrorsToLog();
+                    break;
+                }else if(opList.contains(firstWord)){
                     opcode.OpcodeHandler(firstWord, line, linesToLog, currentLine, labelList, originalLine);
                     break;
-                }else if(firstWord.equals(END)){
+                } else if(firstWord.equals(END)){
                     ENDHandler(line, err);
                     break;
-                }else if(firstWord.equals(START)){
+                } else if(firstWord.equals(START)){
                     SRTHandler(line, err);
                     break;
                 } else{
@@ -101,8 +125,13 @@ public class PALParser {
         String newLine = line.replace(" ", "");
         if(newLine.length() > 3){
             err.ENDOrSRT(line, 1, currentLine, linesToLog);
+        } else if(startCounter == 1){
+            err.AddToErrorList(11);
+            linesToLog.add(currentLine + " " + line);
+            err.ErrorsToLog();
         } else{
             linesToLog.add(currentLine + " " + originalLine);
+            startCounter = 1;
         }
     }
 
@@ -113,8 +142,13 @@ public class PALParser {
         String newLine = line.replace(" ", "");
         if(newLine.length() > 3){
             err.ENDOrSRT(line, 0, currentLine, linesToLog);
-        } else{
+        } else if(startCounter == 0) {
+            err.AddToErrorList(12);
+            linesToLog.add(currentLine + " " + line);
+            err.ErrorsToLog();
+        }else{
             linesToLog.add(currentLine + " " + originalLine);
+            startCounter = 0;
         }
     }
 
@@ -157,7 +191,7 @@ public class PALParser {
      * then adds them to a .log file.
      */
     public void FileWriter(List<String> list){
-        Path logFile = Paths.get(fileName + ".log");//used for writing to .log file
+        Path logFile = Paths.get(fileNameAppended + ".log");//used for writing to .log file
         try {
             Files.write(logFile, list, Charset.forName("UTF-8"));
         }
@@ -176,8 +210,8 @@ public class PALParser {
 
         //components of header
         String title = "PAL Error Check";
-        String palName = fileName + ".pal";
-        String logName = fileName + ".log";
+        String palName = fileNameAppended;
+        String logName = fileNameAppended + ".log";
         String strDate = dateFormat.format(date);
         String myName = "Jonathan Nieblas";
         String courseName = "CS 3210";

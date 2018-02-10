@@ -11,3 +11,4 @@ out/production/PALParserIdea/PALParser.class
 PALParserIdea.iml
 PRINTME.log
 *.class
+*.log

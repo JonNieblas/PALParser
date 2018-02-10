@@ -35,31 +35,40 @@ public class ErrorHandler {
 
     //points to correct error statement for .log
     public String Errors(int i, String word){
-        String error = "Error Statement";
-        if (i == 0){
-            error = "*** Wrong Operand Type: Immediate Value "  + word + " Where Register Was Expected.";
-        } else if(i == 1){
-            error = "*** Ill-Formed Operand: " + word + " Is Not a Valid Operand Type. Registers R0 - R7 Are Valid.";
-        } else if(i == 2){
-            error = "*** Too Many Operands: You Have Exceeded The Valid Number Of Operands For This Opcode.";
-        } else if(i == 3){
-            error = "*** Too Few Operands: You Have Not Met The Valid Number Of Operands For This Opcode.";
-        } else if(i == 4){
-            error = "*** Ill-Formed Label: " + word + " Can't Exceed 12 Chars And Must Contain One Colon. " +
-                    "\n*** Colon Must Be At The End Of The Label.";
-        } else if(i == 5){
-            error = "*** Invalid Opcode: " + word + " Is Not a Valid Opcode. Please Review Valid Opcodes " +
-                    "For More Details.";
-        } else if(i == 6){
-            error = "*** Branches to Non-Existent Label: " + word + " Is Not a Label That Was Previously Created.";
-        } else if(i == 7){
-            error = "*** Wrong Operand Type: String " + word + " Where Immediate Value Was Expected.";
-        } else if(i == 8){
-            error = "*** Ill-Formed Exit Opcode: " + word + " is not a valid opcode to end a program with. Try 'END' instead.";
-        } else if(i == 9){
-            error = "*** Ill-Formed Start Opcode: " + word + " is not a valid opcode to start a program with. Try 'SRT' instead.";
-        } else if(i == 10){
-            error = "*** Expecting Label: " + word + " is not label. Please replace with a valid label.";
+        String error = null;
+        switch (i){
+            case 0: error = "*** Wrong Operand Type: Immediate Value '"  + word + "' Where Register Was Expected.";
+                    break;
+            case 1: error = "*** Ill-Formed Operand: '" + word + "' Is Not a Valid Operand Type. Registers R0 - R7 Are Valid.";
+                    break;
+            case 2: error = "*** Too Many Operands: You Have Exceeded The Valid Number Of Operands For This Opcode.";
+                    break;
+            case 3: error = "*** Too Few Operands: You Have Not Met The Valid Number Of Operands For This Opcode.";
+                    break;
+            case 4: error = "*** Ill-Formed Label: '" + word + "' Can't Exceed 12 Chars And Must Contain One Colon."
+                            + "\n*** Colon Must Be At The End Of The Label.";
+                    break;
+            case 5: error = "*** Invalid Opcode: '" + word + "' Is Not a Valid Opcode. Please Review Valid Opcodes "
+                            + "For More Details.";
+                    break;
+            case 6: error = "*** Branches to Non-Existent Label: '" + word + "' Is Not a Label That Was Previously Created.";
+                    break;
+            case 7: error = "*** Wrong Operand Type: String '" + word + "' Where Immediate Value Was Expected.";
+                    break;
+            case 8: error = "*** Ill-Formed Exit Opcode: '" + word + "' is not a valid opcode to end a program with. Try 'END' instead.";
+                    break;
+            case 9: error = "*** Ill-Formed Start Opcode: '" + word + "' is not a valid opcode to start a program with. Try 'SRT' instead.";
+                    break;
+            case 10: error = "*** Expecting Label: '" + word + "' is not label. Please replace with a valid label.";
+                    break;
+            case 11: error = "*** SRT Detected in Program: Can't start a new program until this one has ended";
+                    break;
+            case 12: error = "*** END Declared Before SRT: SRT hasn't be instantiated yet.";
+                    break;
+            case 13: error = "*** Code Outside of Program: All lines of code must be contained between SRT and END opcodes.";
+                    break;
+            case 14: error = "*** END Not Detected: All PAL programs must conclude with END opcode.";
+                    break;
         }
         return error;
     }
