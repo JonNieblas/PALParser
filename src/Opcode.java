@@ -1,7 +1,7 @@
 /*
  * Opcode contains all methods dealing with opcodes, as well as the construction of the opList arrayList
  */
-
+//****CONSIDER: moving some checkers to the ErrorHandler class. This one is getting busy
 import java.util.ArrayList;
 import java.util.List;
 
@@ -23,19 +23,19 @@ public class Opcode {
      * the correct method, along with the linesToLog list.
      */
     public void OpcodeHandler(String opcode, String line, List<String> linesToLog, int lineCount,
-                              ArrayList<String> labelList){
+                              ArrayList<String> labelList, String originalLine){
         if(opcode.equals("ADD") || opcode.equals("SUB") || opcode.equals("MUL") || opcode.equals("DIV")){
-            ASMDOpcode(line, linesToLog, lineCount);
+            ASMDOpcode(line, linesToLog, lineCount, originalLine);
         } else if(opcode.equals("COPY")){
-            COPYOpcode(line, linesToLog, lineCount);
+            COPYOpcode(line, linesToLog, lineCount, originalLine);
         } else if(opcode.equals("MOVE")){
-            MOVEOpcode(line, linesToLog, lineCount);
+            MOVEOpcode(line, linesToLog, lineCount, originalLine);
         } else if(opcode.equals("INC") || opcode.equals("DEC")){
-            IDOpcode(line, linesToLog, lineCount);
+            IDOpcode(line, linesToLog, lineCount, originalLine);
         } else if(opcode.equals("BEQ") || opcode.equals("BGT")){
-            BEBGOpcode(line, linesToLog, lineCount, labelList);
+            BEBGOpcode(line, linesToLog, lineCount, labelList, originalLine);
         } else if(opcode.equals("BR")){
-            BROpcode (line, linesToLog, lineCount, labelList);
+            BROpcode (line, linesToLog, lineCount, labelList, originalLine);
         }
     }
 
@@ -43,7 +43,7 @@ public class Opcode {
      * Observes an ADD/SUB/MUL/DIV line to make sure there are no errors.
      * Reports errors to ErrorHandler.
      */
-    public void ASMDOpcode(String line, List<String> linesToLog, int lineCount){
+    public void ASMDOpcode(String line, List<String> linesToLog, int lineCount, String originalLine){
         int wordCount = 0;
         ErrorHandler err = new ErrorHandler(linesToLog);
         wordSplitter = line.split(" ");
@@ -56,14 +56,14 @@ public class Opcode {
             }
             wordCount++;
         }
-        LogListAdder(err, linesToLog, wordCount, lineCount, "ASMD", line);
+        LogListAdder(err, linesToLog, wordCount, lineCount, "ASMD", originalLine);
     }
 
     /*
      * Observes a COPY line to make sure there are no errors.
      * Reports errors to ErrorHandler.
      */
-    public void COPYOpcode(String line, List<String> linesToLog, int lineCount){
+    public void COPYOpcode(String line, List<String> linesToLog, int lineCount, String originalLine){
         int wordCount = 0;
         ErrorHandler err = new ErrorHandler(linesToLog);
         wordSplitter = line.split(" ");
@@ -75,7 +75,7 @@ public class Opcode {
             }
             wordCount++;
         }
-        LogListAdder(err, linesToLog, wordCount, lineCount, "MC", line);
+        LogListAdder(err, linesToLog, wordCount, lineCount, "MC", originalLine);
     }
 
     /*
@@ -83,7 +83,7 @@ public class Opcode {
      * Reports errors to ErrorHandler.
      *
      */
-    public void MOVEOpcode(String line, List<String> linesToLog, int lineCount){
+    public void MOVEOpcode(String line, List<String> linesToLog, int lineCount, String originalLine){
         int wordCount = 0;
         ErrorHandler err = new ErrorHandler(linesToLog);
         wordSplitter = line.split(" ");
@@ -95,7 +95,7 @@ public class Opcode {
             }
             wordCount++;
         }
-        LogListAdder(err, linesToLog, wordCount, lineCount, "MC", line);
+        LogListAdder(err, linesToLog, wordCount, lineCount, "MC", originalLine);
     }
 
     /*
@@ -103,7 +103,7 @@ public class Opcode {
      * Uses DestinationChecker instead of SourceChecker bc there is only one operand in this opcode.
      * Reports errors to ErrorHandler.
      */
-    public void IDOpcode(String line, List<String> linesToLog, int lineCount){
+    public void IDOpcode(String line, List<String> linesToLog, int lineCount, String originalLine){
         int wordCount = 0;
         ErrorHandler err = new ErrorHandler(linesToLog);
         wordSplitter = line.split(" ");
@@ -113,14 +113,15 @@ public class Opcode {
             }
             wordCount++;
         }
-        LogListAdder(err, linesToLog, wordCount, lineCount, "ID", line);
+        LogListAdder(err, linesToLog, wordCount, lineCount, "ID", originalLine);
     }
 
     /*
      * Observes BEQ/BGT lines to make sure they match syntax.
      * Reports errors if not.
      */
-    public void BEBGOpcode(String line, List<String> linesToLog, int lineCount, ArrayList<String> labelList){
+    public void BEBGOpcode(String line, List<String> linesToLog, int lineCount, ArrayList<String> labelList,
+                           String originalLine){
         int wordCount = 0;
         String placeHolder = "";
         ErrorHandler err = new ErrorHandler(linesToLog);
@@ -141,14 +142,15 @@ public class Opcode {
             }
         }
         wordCount = LabelChecker(err, placeHolder, labelList, wordCount);
-        LogListAdder(err, linesToLog, wordCount, lineCount, "BEBG", line);
+        LogListAdder(err, linesToLog, wordCount, lineCount, "BEBG", originalLine);
     }
 
     /*
      * Observes BR line to make sure it matches syntax.
      * Reports errors if not.
      */
-    public void BROpcode(String line, List<String> linesToLog, int lineCount, ArrayList<String> labelList){
+    public void BROpcode(String line, List<String> linesToLog, int lineCount, ArrayList<String> labelList,
+                         String originalLine){
         int wordCount = 0;
         String placeHolder = "";
         ErrorHandler err = new ErrorHandler(linesToLog);
@@ -166,7 +168,7 @@ public class Opcode {
             }
         }
         wordCount = LabelChecker(err, placeHolder, labelList, wordCount);
-        LogListAdder(err, linesToLog, wordCount, lineCount, "BR", line);
+        LogListAdder(err, linesToLog, wordCount, lineCount, "BR", originalLine);
     }
 
     /*
@@ -182,9 +184,9 @@ public class Opcode {
     /*
      * Adds correct information to linesToLog ArrayList, as well as error ArrayList
      */
-    public void LogListAdder(ErrorHandler err, List<String> linesToLog, int wordCount, int lineCount, String opcode, String line){
+    public void LogListAdder(ErrorHandler err, List<String> linesToLog, int wordCount, int lineCount, String opcode, String originalLine){
         WordsInLine(err, wordCount, opcode);
-        linesToLog.add(lineCount + " " + line);
+        linesToLog.add(lineCount + " " + originalLine);
         err.ErrorsToLog();
     }
 
@@ -276,5 +278,4 @@ public class Opcode {
             }
         }
     }
-
 }

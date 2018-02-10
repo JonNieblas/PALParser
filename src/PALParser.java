@@ -9,17 +9,16 @@ public class PALParser {
     Opcode opcode = new Opcode();//methods contained here will be
                                  //used later to check for opcode rules
 
-    private final String START = "STR";//valid opcode for beginning of .pal
-    private final String END = "EXIT";//valid opcode for end of .pal
-    private final int VALIDLABELLENGTH = 12;//max length of label
-    private final int VALIDENDLENGTH = 4;//only length of end opcode
-    private final int VALIDSTARTLENGTH = 3;//only length of start opcode
+    private final String START = "SRT";//valid opcode for beginning of .pal
+    private final String END = "END";//valid opcode for end of .pal
 
-    private String line = null;//current line being parsed
+    private String line = " ";//current line being parsed without comments
     private String firstWord;//first word of each line (used to find opcode or label)
     private String fileName;// file to be named from main
+    private String originalLine;//line with comments included
     private int currentLine = 1;//used for error messaging to the user
     private int wordsInLine = 0;//counts words in a line
+    private String[] wordSplitter;
 
     private ArrayList<String> opList;//contains valid opcodes
     private ArrayList<String> labelList = new ArrayList<>();//contains valid labels for branches
@@ -38,9 +37,18 @@ public class PALParser {
             FileReader fileReader = new FileReader(fileName);
             BufferedReader bufferedReader = new BufferedReader(fileReader);
             LogHeader(linesToLog);
+            String comment;
+            String newLine;
 
             while ((line = bufferedReader.readLine()) != null) {//lines still left in .pal
-                LabelOrOpcode(line);
+                if(line.contains(";")) {//check for comments
+                    comment = line.substring(line.lastIndexOf(';') - 1);//will take comment
+                    newLine = line.replace(comment, "");//will remove comment from line
+                }else{
+                    newLine = line;
+                }
+                originalLine = line;
+                LabelOrOpcode(newLine);
             }
             FileWriter(linesToLog);//writes log array to .log file
             bufferedReader.close();//close process
@@ -59,27 +67,55 @@ public class PALParser {
      * possibly make sentence splitters for each operand
      */
     public void OpcodeChecker(String line, ErrorHandler err) {
-        String[] wordSplitter = line.split(" ");
-        String currentWord;
 
+        wordSplitter = line.split(" ");
         for (String word : wordSplitter) {
             wordsInLine++;
-            currentWord = word;
+            firstWord = word;
             if (wordsInLine == 1) {
-                firstWord = currentWord;
                 if(opList.contains(firstWord)){
-                    opcode.OpcodeHandler(firstWord, line, linesToLog, currentLine, labelList);
+                    opcode.OpcodeHandler(firstWord, line, linesToLog, currentLine, labelList, originalLine);
                     break;
-                }else{
+                }else if(firstWord.equals(END)){
+                    ENDHandler(line, err);
+                    break;
+                }else if(firstWord.equals(START)){
+                    SRTHandler(line, err);
+                    break;
+                } else{
                     err.AddToErrorList(5);
                     err.AddToProblemWordList(word);
-                    linesToLog.add(currentLine + " " + line);
+                    linesToLog.add(currentLine + " " + originalLine);
                     err.ErrorsToLog();
                     break;
                 }
             }
         }
         wordsInLine = 0;//reset counter of words in a line
+    }
+
+    /*
+     * Checks that SRT is used correctly
+     */
+    public void SRTHandler(String line, ErrorHandler err){
+        String newLine = line.replace(" ", "");
+        if(newLine.length() > 3){
+            err.ENDOrSRT(line, 1, currentLine, linesToLog);
+        } else{
+            linesToLog.add(currentLine + " " + originalLine);
+        }
+    }
+
+    /*
+     * Checks that SRT is used correctly
+     */
+    public void ENDHandler(String line, ErrorHandler err){
+        String newLine = line.replace(" ", "");
+        if(newLine.length() > 3){
+            err.ENDOrSRT(line, 0, currentLine, linesToLog);
+        } else{
+            linesToLog.add(currentLine + " " + originalLine);
+        }
     }
 
     /*
@@ -91,7 +127,7 @@ public class PALParser {
         }else {
             err.AddToErrorList(4);
             err.AddToProblemWordList(line);
-            linesToLog.add(currentLine + " " + line);
+            linesToLog.add(currentLine + " " + originalLine);
             err.ErrorsToLog();
         }
     }
