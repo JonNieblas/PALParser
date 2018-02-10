@@ -41,7 +41,7 @@ public class ErrorHandler {
             error = "*** Wrong Operand Type: Immediate Value "  + word + " Where Register Was Expected.";
         }
         else if(i == 1){
-            error = "*** Ill-Formed Operand: " + word + " Is Not a Valid Operand Type. Registers R0 - R13 Are Valid.";
+            error = "*** Ill-Formed Operand: " + word + " Is Not a Valid Operand Type. Registers R0 - R7 Are Valid.";
         }
         else if(i == 2){
             error = "*** Too Many Operands: You Have Exceeded The Valid Number Of Operands For This Opcode.";
@@ -50,7 +50,7 @@ public class ErrorHandler {
             error = "*** Too Few Operands: You Have Not Met The Valid Number Of Operands For This Opcode.";
         }
         else if(i == 4){
-            error = "*** Ill-Formed Label: " + word + " Must Be At Most 12 Characters Long And Contain One Colon. " +
+            error = "*** Ill-Formed Label: " + word + " Can't Exceed 12 Chars, Must Contain One Colon, And Have No Spaces. " +
                     "\n*** Colon Must Be At The End Of The Label.";
         }
         else if(i == 5){
@@ -58,7 +58,7 @@ public class ErrorHandler {
                     "For More Details.";
         }
         else if(i == 6){
-            error = "*** Branches to Non-Existent Label: " + word + " Is Not a Branch That Was Previously Created.";
+            error = "*** Branches to Non-Existent Label: " + word + " Is Not a Label That Was Previously Created.";
         }
         else if(i == 7){
             error = "*** Wrong Operand Type: String " + word + " Where Immediate Value Was Expected.";

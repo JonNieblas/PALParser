@@ -1,7 +1,7 @@
 ADD R1, R2, R2
 SUB R1, R2 R3
 
-new label:
+newlabel:
 MUL R1, R2, R3, R4
 
 DIV R1, 33, R3
@@ -23,4 +23,8 @@ Add R1, R2
 
 label: here
 
-BGT new label:
+BGT R1, R1, newlabel:
+BEQ R1, R1, new label:
+
+BR newlabel:
+BR new label:

@@ -22,24 +22,20 @@ public class Opcode {
      * OpcodeHandler will take the opcode and pass the line it was contained in to
      * the correct method, along with the linesToLog list.
      */
-    public void OpcodeHandler(String opcode, String line, List<String> linesToLog, int lineCount){
+    public void OpcodeHandler(String opcode, String line, List<String> linesToLog, int lineCount,
+                              ArrayList<String> labelList){
         if(opcode.equals("ADD") || opcode.equals("SUB") || opcode.equals("MUL") || opcode.equals("DIV")){
             ASMDOpcode(line, linesToLog, lineCount);
-        }
-        else if(opcode.equals("COPY")){
+        } else if(opcode.equals("COPY")){
             COPYOpcode(line, linesToLog, lineCount);
-        }
-        else if(opcode.equals("MOVE")){
+        } else if(opcode.equals("MOVE")){
             MOVEOpcode(line, linesToLog, lineCount);
-        }
-        else if(opcode.equals("INC") || opcode.equals("DEC")){
+        } else if(opcode.equals("INC") || opcode.equals("DEC")){
             IDOpcode(line, linesToLog, lineCount);
-        }
-        else if(opcode.equals("BEQ") || opcode.equals("BGT")){
-            //BEBGOpcode(line, linesToLog, labelList, lineCount);
-        }
-        else if(opcode.equals("BR")){
-            //BROpcode (line, linesToLog, labelList, lineCount);
+        } else if(opcode.equals("BEQ") || opcode.equals("BGT")){
+            BEBGOpcode(line, linesToLog, lineCount, labelList);
+        } else if(opcode.equals("BR")){
+            BROpcode (line, linesToLog, lineCount, labelList);
         }
     }
 
@@ -121,10 +117,63 @@ public class Opcode {
     }
 
     /*
+     * Observes BEQ/BGT lines to make sure they match syntax.
+     * Reports errors if not.
+     */
+    public void BEBGOpcode(String line, List<String> linesToLog, int lineCount, ArrayList<String> labelList){
+        int wordCount = 0;
+        String placeHolder = "";
+        ErrorHandler err = new ErrorHandler(linesToLog);
+        wordSplitter = line.split(" ");
+        for(String word : wordSplitter){
+            if(wordCount == 0){
+                wordCount++;
+            } else if(wordCount > 0 && wordCount < 3){
+                SourceChecker(err, word);
+                wordCount++;
+            }else if(wordCount > 2){
+                if(!validSources.contains(word) || !validDestinations.contains(word)) {
+                    placeHolder = placeHolder + word + " ";
+                }else{
+                    //is an operand
+                    wordCount++;
+                }
+            }
+        }
+        wordCount = LabelChecker(err, placeHolder, labelList, wordCount);
+        LogListAdder(err, linesToLog, wordCount, lineCount, "BEBG", line);
+    }
+
+    /*
+     * Observes BR line to make sure it matches syntax.
+     * Reports errors if not.
+     */
+    public void BROpcode(String line, List<String> linesToLog, int lineCount, ArrayList<String> labelList){
+        int wordCount = 0;
+        String placeHolder = "";
+        ErrorHandler err = new ErrorHandler(linesToLog);
+        wordSplitter = line.split(" ");
+        for(String word : wordSplitter){
+            if(wordCount == 0){
+                wordCount++;
+            } else if (wordCount > 0){
+                if(!validSources.contains(word) || !validDestinations.contains(word)){
+                    placeHolder = placeHolder + word + " ";
+                }else{
+                    //is an operand
+                    wordCount++;
+                }
+            }
+        }
+        wordCount = LabelChecker(err, placeHolder, labelList, wordCount);
+        LogListAdder(err, linesToLog, wordCount, lineCount, "BR", line);
+    }
+
+    /*
      * Creates an ArrayList of valid registers for both the source & destination registers
      */
     public void RegisterListCreator(){
-        for(int i = 0; i < 14; i++){
+        for(int i = 0; i < 8; i++){
             validSources.add("R" + i + ",");
             validDestinations.add("R" + i);
         }
@@ -161,6 +210,21 @@ public class Opcode {
     }
 
     /*
+     * Checks that Branch is going to existing label.
+     */
+    public int LabelChecker(ErrorHandler err, String word, ArrayList<String> labelList, int wordCount){
+        word = word.trim();
+        if(!labelList.contains(word)){
+            wordCount++;
+            err.AddToErrorList(6);
+            err.AddToProblemWordList(word);
+        }else if(labelList.contains(word)){
+            wordCount++;
+        }
+        return wordCount;
+    }
+
+    /*
      * Checks to see if the incorrect operand is an immediate value or an ill-formed operand.
      * Second comparison in if statement catches word with comma (EX: R1,; 22,; wow,;
      */
@@ -169,8 +233,7 @@ public class Opcode {
         if(word.matches("^-?\\d+$")){
             err.AddToErrorList(0);//error for immediate value
             err.AddToProblemWordList(word);
-        }
-        else {
+        } else {
             err.AddToErrorList(1);//error for ill-formed operand
             err.AddToProblemWordList(word);
         }
@@ -193,19 +256,19 @@ public class Opcode {
      * this will alert the ErrorHandler.
      */
     public void WordsInLine(ErrorHandler err, int wordCount, String opcode){
-        if(opcode == "ASMD") {
+        if(opcode.equals("ASMD") || opcode.equals("BEBG")){
             if (wordCount > 4) {
                 err.AddToErrorList(2);
             } else if (wordCount < 4) {
                 err.AddToErrorList(3);
             }
-        } else if(opcode == "MC"){
+        } else if(opcode.equals("MC")){
             if (wordCount > 3) {
                 err.AddToErrorList(2);
             } else if (wordCount < 3) {
                 err.AddToErrorList(3);
             }
-        } else if(opcode == "ID"){
+        } else if(opcode.equals("ID") || opcode.equals("BR")){
             if(wordCount > 2){
                 err.AddToErrorList(2);
             } else if(wordCount < 2){

@@ -68,7 +68,7 @@ public class PALParser {
             if (wordsInLine == 1) {
                 firstWord = currentWord;
                 if(opList.contains(firstWord)){
-                    opcode.OpcodeHandler(firstWord, line, linesToLog, currentLine);
+                    opcode.OpcodeHandler(firstWord, line, linesToLog, currentLine, labelList);
                     break;
                 }else{
                     err.AddToErrorList(5);
@@ -83,6 +83,19 @@ public class PALParser {
     }
 
     /*
+     * Checks if line is a label or a branch instruction
+     */
+    public void LabelChecker(String line, ErrorHandler err){
+        if(line.contains("BEQ") || line.contains("BGT") || line.contains("BR")){
+            OpcodeChecker(line, err);
+        }else {
+            err.AddToErrorList(4);
+            err.AddToProblemWordList(line);
+            linesToLog.add(currentLine + " " + line);
+            err.ErrorsToLog();
+        }
+    }
+    /*
      * Checks that a line is not empty. If it is not, then it checks to see if the line
      * is a label or opcode.
      * If neither, it throws an error.
@@ -93,11 +106,9 @@ public class PALParser {
             if (line.endsWith(":") && line.length() < 12) {//is label
                 labelList.add(line);
                 linesToLog.add(currentLine + " " + line);
-            } else if ((line.contains(":") && !line.endsWith(":")) || (line.contains(":") && line.length() > 11)){
-                err.AddToErrorList(4);
-                err.AddToProblemWordList(line);
-                linesToLog.add(currentLine + " " + line);
-                err.ErrorsToLog();
+            } else if ((line.contains(":") && !line.endsWith(":")) || (line.contains(":") && line.length() > 11
+                        || (line.contains(":") && line.contains(" ")))){
+                LabelChecker(line, err);
             } else{
                 OpcodeChecker(line, err);//split line to find first opcode
             }
