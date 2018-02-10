@@ -24,7 +24,7 @@ public class ErrorHandler {
             errorList.remove(Integer.valueOf(1));
         }
         for(int i : errorList){
-            if(i == 0 || i == 1 || i == 4 || i == 5 || i == 6 || i == 7 || i == 8 || i == 9) {
+            if(i == 0 || i == 1 || i == 4 || i == 5 || i == 6 || i == 7 || i == 8 || i == 9 || i == 10) {
                 toLogList.add(Errors(i, problemWordList.get(0)));
             }
             else{
@@ -45,7 +45,7 @@ public class ErrorHandler {
         } else if(i == 3){
             error = "*** Too Few Operands: You Have Not Met The Valid Number Of Operands For This Opcode.";
         } else if(i == 4){
-            error = "*** Ill-Formed Label: " + word + " Can't Exceed 12 Chars, Must Contain One Colon, And Have No Spaces. " +
+            error = "*** Ill-Formed Label: " + word + " Can't Exceed 12 Chars And Must Contain One Colon. " +
                     "\n*** Colon Must Be At The End Of The Label.";
         } else if(i == 5){
             error = "*** Invalid Opcode: " + word + " Is Not a Valid Opcode. Please Review Valid Opcodes " +
@@ -58,6 +58,8 @@ public class ErrorHandler {
             error = "*** Ill-Formed Exit Opcode: " + word + " is not a valid opcode to end a program with. Try 'END' instead.";
         } else if(i == 9){
             error = "*** Ill-Formed Start Opcode: " + word + " is not a valid opcode to start a program with. Try 'SRT' instead.";
+        } else if(i == 10){
+            error = "*** Expecting Label: " + word + " is not label. Please replace with a valid label.";
         }
         return error;
     }

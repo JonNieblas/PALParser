@@ -1,7 +1,7 @@
 SRT ;try out this comment
 SRT begins now
 ADD R1, R2, R2 ;add these two together
-SUB R1, R2 R3 ;sub these
+SUB R1, R2, R3 ;sub these
 
 newlabel:
 MUL R1, R2, R3, R4 ;easy mul
@@ -28,8 +28,8 @@ label: here ;new label
 BGT R1, R1, newlabel: ;alright!
 BEQ R1, R1, new label: ;okay!
 
-BR newlabel:
-BR new label:
+BR newlabel: ;lets try this out
+BR new label: ;lets try this out
 
 END ;this is the end
 

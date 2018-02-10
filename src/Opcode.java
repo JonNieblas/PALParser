@@ -7,8 +7,7 @@ import java.util.List;
 
 public class Opcode {
 
-    private ArrayList<String> validSources = new ArrayList<String>();//Registers with Commas
-    private ArrayList<String> validDestinations = new ArrayList<String>();//Registers without commas
+    private ArrayList<String> validRegisters = new ArrayList<>();
     private String[] wordSplitter;
 
     /*
@@ -24,16 +23,18 @@ public class Opcode {
      */
     public void OpcodeHandler(String opcode, String line, List<String> linesToLog, int lineCount,
                               ArrayList<String> labelList, String originalLine){
+        String newLine = line.replace(opcode, "");//get rid of opcode
+            newLine = newLine.replace(" ", "");//get rid of spaces
         if(opcode.equals("ADD") || opcode.equals("SUB") || opcode.equals("MUL") || opcode.equals("DIV")){
-            ASMDOpcode(line, linesToLog, lineCount, originalLine);
+            ASMDOpcode(newLine, linesToLog, lineCount, originalLine);
         } else if(opcode.equals("COPY")){
-            COPYOpcode(line, linesToLog, lineCount, originalLine);
+            COPYOpcode(newLine, linesToLog, lineCount, originalLine);
         } else if(opcode.equals("MOVE")){
-            MOVEOpcode(line, linesToLog, lineCount, originalLine);
+            MOVEOpcode(newLine, linesToLog, lineCount, originalLine);
         } else if(opcode.equals("INC") || opcode.equals("DEC")){
-            IDOpcode(line, linesToLog, lineCount, originalLine);
+            IDOpcode(newLine, linesToLog, lineCount, originalLine);
         } else if(opcode.equals("BEQ") || opcode.equals("BGT")){
-            BEBGOpcode(line, linesToLog, lineCount, labelList, originalLine);
+            BEBGOpcode(newLine, linesToLog, lineCount, labelList, originalLine);
         } else if(opcode.equals("BR")){
             BROpcode (line, linesToLog, lineCount, labelList, originalLine);
         }
@@ -46,13 +47,11 @@ public class Opcode {
     public void ASMDOpcode(String line, List<String> linesToLog, int lineCount, String originalLine){
         int wordCount = 0;
         ErrorHandler err = new ErrorHandler(linesToLog);
-        wordSplitter = line.split(" ");
+        wordSplitter = line.split(",");//changed to comma
 
-        for (String word : wordSplitter){
-            if(wordCount > 0 && wordCount < 3){
-                SourceChecker(err, word);
-            } else if(wordCount == 3){
-                DestinationChecker(err, word);
+        for(String word : wordSplitter){
+            if(wordCount < 4){
+                RegisterChecker(err, word);
             }
             wordCount++;
         }
@@ -66,13 +65,9 @@ public class Opcode {
     public void COPYOpcode(String line, List<String> linesToLog, int lineCount, String originalLine){
         int wordCount = 0;
         ErrorHandler err = new ErrorHandler(linesToLog);
-        wordSplitter = line.split(" ");
+        wordSplitter = line.split(",");
         for(String word : wordSplitter){
-            if(wordCount == 1){
-                SourceChecker(err, word);
-            } else if(wordCount == 2){
-                DestinationChecker(err, word);
-            }
+            RegisterChecker(err, word);
             wordCount++;
         }
         LogListAdder(err, linesToLog, wordCount, lineCount, "MC", originalLine);
@@ -86,12 +81,12 @@ public class Opcode {
     public void MOVEOpcode(String line, List<String> linesToLog, int lineCount, String originalLine){
         int wordCount = 0;
         ErrorHandler err = new ErrorHandler(linesToLog);
-        wordSplitter = line.split(" ");
+        wordSplitter = line.split(",");
         for(String word : wordSplitter){
-            if(wordCount == 1){
+            if(wordCount == 0){
                 ShouldBeInteger(err, word);
-            } else if(wordCount == 2){
-                DestinationChecker(err, word);
+            } else if(wordCount > 0){
+                RegisterChecker(err, word);
             }
             wordCount++;
         }
@@ -106,11 +101,9 @@ public class Opcode {
     public void IDOpcode(String line, List<String> linesToLog, int lineCount, String originalLine){
         int wordCount = 0;
         ErrorHandler err = new ErrorHandler(linesToLog);
-        wordSplitter = line.split(" ");
+        wordSplitter = line.split(",");
         for(String word : wordSplitter){
-            if(wordCount == 1){
-                DestinationChecker(err, word);
-            }
+            RegisterChecker(err, word);
             wordCount++;
         }
         LogListAdder(err, linesToLog, wordCount, lineCount, "ID", originalLine);
@@ -123,25 +116,18 @@ public class Opcode {
     public void BEBGOpcode(String line, List<String> linesToLog, int lineCount, ArrayList<String> labelList,
                            String originalLine){
         int wordCount = 0;
-        String placeHolder = "";
+        String label = LabelFinder(originalLine);
         ErrorHandler err = new ErrorHandler(linesToLog);
-        wordSplitter = line.split(" ");
+        wordSplitter = line.split(",");
         for(String word : wordSplitter){
-            if(wordCount == 0){
+            if(wordCount < 2){
+                RegisterChecker(err, word);
                 wordCount++;
-            } else if(wordCount > 0 && wordCount < 3){
-                SourceChecker(err, word);
+            }else{
                 wordCount++;
-            }else if(wordCount > 2){
-                if(!validSources.contains(word) || !validDestinations.contains(word)) {
-                    placeHolder = placeHolder + word + " ";
-                }else{
-                    //is an operand
-                    wordCount++;
-                }
             }
         }
-        wordCount = LabelChecker(err, placeHolder, labelList, wordCount);
+        LabelChecker(err, label, labelList);
         LogListAdder(err, linesToLog, wordCount, lineCount, "BEBG", originalLine);
     }
 
@@ -152,22 +138,22 @@ public class Opcode {
     public void BROpcode(String line, List<String> linesToLog, int lineCount, ArrayList<String> labelList,
                          String originalLine){
         int wordCount = 0;
-        String placeHolder = "";
+        String label = LabelFinder(originalLine);
         ErrorHandler err = new ErrorHandler(linesToLog);
-        wordSplitter = line.split(" ");
+        wordSplitter = line.split(",");
         for(String word : wordSplitter){
             if(wordCount == 0){
-                wordCount++;
-            } else if (wordCount > 0){
-                if(!validSources.contains(word) || !validDestinations.contains(word)){
-                    placeHolder = placeHolder + word + " ";
-                }else{
-                    //is an operand
-                    wordCount++;
+                if(!word.contains(":")){
+                    err.AddToErrorList(10);
+                    err.AddToProblemWordList(word);
                 }
             }
+            wordCount++;
         }
-        wordCount = LabelChecker(err, placeHolder, labelList, wordCount);
+
+
+
+        LabelChecker(err, label, labelList);
         LogListAdder(err, linesToLog, wordCount, lineCount, "BR", originalLine);
     }
 
@@ -176,9 +162,28 @@ public class Opcode {
      */
     public void RegisterListCreator(){
         for(int i = 0; i < 8; i++){
-            validSources.add("R" + i + ",");
-            validDestinations.add("R" + i);
+            validRegisters.add("R" + i);
         }
+    }
+
+    /*
+     * Finds label in a branch statement. Finds label so it can compare to list of labels
+     */
+    public String LabelFinder(String originalLine){
+        String label;
+        if (originalLine.contains(";")) {
+            String comment = originalLine.substring(originalLine.lastIndexOf(';'));
+            label = originalLine.replace(comment, "");
+            if(label.contains(",")) {
+                label = label.substring(label.lastIndexOf(','));
+                label = label.replace(",", "");
+            }else{
+                label = label.replace("BR", "");
+            }
+        }else{
+            label = originalLine.replace("BR", " ");
+        }
+        return label;
     }
 
     /*
@@ -190,23 +195,8 @@ public class Opcode {
         err.ErrorsToLog();
     }
 
-    /*
-     * Checks that each source is of the correct type
-     * FIX: If one of the sources doesn't have a comma, create a different type of error code for it
-     */
-    public void SourceChecker(ErrorHandler err, String word){
-        if(!validSources.contains(word)){
-            word = word.replace(",", "");
-            OperandStringOrInteger(err, word);
-        }
-    }
-
-    /*
-     * Checks that each destination is of the correct type.
-     */
-    public void DestinationChecker(ErrorHandler err, String word){
-        if(!validDestinations.contains(word) && !validSources.contains(word)) {
-            word = word.replace(",", "");
+    public void RegisterChecker(ErrorHandler err, String word){
+        if(!validRegisters.contains(word)){
             OperandStringOrInteger(err, word);
         }
     }
@@ -214,16 +204,12 @@ public class Opcode {
     /*
      * Checks that Branch is going to existing label.
      */
-    public int LabelChecker(ErrorHandler err, String word, ArrayList<String> labelList, int wordCount){
-        word = word.trim();
-        if(!labelList.contains(word)){
-            wordCount++;
+    public void LabelChecker(ErrorHandler err, String label, ArrayList<String> labelList){
+        label = label.trim();
+        if(!labelList.contains(label)){
             err.AddToErrorList(6);
-            err.AddToProblemWordList(word);
-        }else if(labelList.contains(word)){
-            wordCount++;
+            err.AddToProblemWordList(label);
         }
-        return wordCount;
     }
 
     /*
@@ -259,21 +245,21 @@ public class Opcode {
      */
     public void WordsInLine(ErrorHandler err, int wordCount, String opcode){
         if(opcode.equals("ASMD") || opcode.equals("BEBG")){
-            if (wordCount > 4) {
-                err.AddToErrorList(2);
-            } else if (wordCount < 4) {
-                err.AddToErrorList(3);
-            }
-        } else if(opcode.equals("MC")){
             if (wordCount > 3) {
                 err.AddToErrorList(2);
             } else if (wordCount < 3) {
                 err.AddToErrorList(3);
             }
-        } else if(opcode.equals("ID") || opcode.equals("BR")){
-            if(wordCount > 2){
+        } else if(opcode.equals("MC")){
+            if (wordCount > 2) {
                 err.AddToErrorList(2);
-            } else if(wordCount < 2){
+            } else if (wordCount < 2) {
+                err.AddToErrorList(3);
+            }
+        } else if(opcode.equals("ID") || opcode.equals("BR")){
+            if(wordCount > 1){
+                err.AddToErrorList(2);
+            } else if(wordCount < 1){
                 err.AddToErrorList(3);
             }
         }
