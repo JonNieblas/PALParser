@@ -3,16 +3,14 @@ import java.nio.charset.Charset;
 import java.nio.file.*;
 import java.text.*;
 import java.util.*;
-
 /**
  * Class PALParser contains void method Parser that reads a PAL assembly language
- * file, breaks it down line by line, passing it to a series of handlers both in
+ * file, breaks it down originalLine by originalLine, passing it to a series of handlers both in
  * this class, Class Opcode, and Class ErrorHandler in order to check syntax correctness.
  * @author Jonathan Nieblas
- * @version 1.9
  */
 public class PALParser {
-    /** Opcode object responsible for handling opcodes outside of SRT/END. */
+    /** Handles a line containing a valid opcode, excluding SRT/END. */
     Opcode opcode = new Opcode();
 
     /** Valid opcode to begin a program with. */
@@ -24,20 +22,20 @@ public class PALParser {
     private int startCounter;
     /** Counter signaling when DEF opcode can be used. */
     private int opCounter;
-    /** Current line num of the .pal file. */
+    /** Current originalLine num of the .pal file. */
     private int currentLine = 1;//used for error messaging to the user
-    /** Count of the words in a line, for finding first word. */
-    private int wordsInLine = 0;//counts words in a line
+    /** Count of the words in a originalLine, for finding first word. */
+    private int wordsInLine = 0;//counts words in a originalLine
 
     /** Line to be parsed from .pal file. */
-    private String line = " ";
+    private String originalLine = " ";
     /** Line with comments & other extras (such as spaces) removed. */
     private String newLine = " ";
-    /** Place holder for comment; will be removed from line. */
+    /** Last non-comment line of a .pal file. */
+    private String lastLine = " ";
+    /** Place holder for comment; will be removed from originalLine. */
     private String comment = " ";
-    /** Original line without missing comments or spaces. */
-    private String originalLine;
-    /** First word of a line. Helps to separate Opcode from line. */
+    /** First word of a originalLine. Helps to separate Opcode from originalLine. */
     private String firstWord;
 
     /** Name of .pal file to be parsed with extension. */
@@ -80,7 +78,7 @@ public class PALParser {
             LogHeaderWriter();
 
             //LINE PARSER
-            while ((line = bufferedReader.readLine()) != null) {
+            while ((originalLine = bufferedReader.readLine()) != null) {
                 CommentHandler();
             }
             //Closes out parsing of file & writes to .log
@@ -96,29 +94,30 @@ public class PALParser {
     }
 
     /**
-     * Checks if a line contains a comment or is just a comment.
+     * Checks if a originalLine contains a comment or is just a comment.
      */
     public void CommentHandler(){
-        if(line.contains(";") && line.lastIndexOf(';')-1 > -1) {//check for comments
-            comment = line.substring(line.lastIndexOf(';') - 1);//will take comment
-            newLine = line.replace(comment, "");//will remove comment from line
+        if(originalLine.contains(";") && originalLine.lastIndexOf(';')-1 > -1) {//check for comments
+            comment = originalLine.substring(originalLine.lastIndexOf(';') - 1);//will take comment
+            newLine = originalLine.replace(comment, "");//will remove comment from originalLine
         }else{
-            newLine = line;
+            newLine = originalLine;
         }
         if(newLine.contains(";")){
             linesToLog.add(currentLine + " " + newLine);
         }else{
-            originalLine = line;
+            lastLine = originalLine;
             LabelOrOpcode();
         }
     }
 
     /**
-     * Checks to see that .pal file's last opcode is "END".
+     * Checks to see that .pal file's last non-comment line is
+     * equal to END opcode.
      */
     public void CheckLastLine(){
         ErrorHandler err = new ErrorHandler(linesToLog);
-        String lastLine = originalLine.trim();
+        lastLine = lastLine.trim();
         if(lastLine.contains(comment)){
             lastLine = lastLine.replace(comment, "");
         }
@@ -129,8 +128,10 @@ public class PALParser {
     }
 
     /**
-     * Takes first word of a line and finds if it's an
-     * opcode, END opcode, START opcode, or DEF opcode.
+     * Takes first word of originalLine and finds if it's a
+     * valid opcode. Passes to SpecialOpcodeHandler() if
+     * opcode is SRT/END/DEF or not recognized.
+     * @param err reported to if any errors
      */
     public void OpcodeHandler(ErrorHandler err) {
 
@@ -144,32 +145,16 @@ public class PALParser {
                     linesToLog.add(currentLine + " " + originalLine);
                     err.ErrorsToLog(numberOfErrors);
                     break;
-                }else if(opList.contains(firstWord)){//passes lines with valid opcodes to Class Opcode
+                }
+                else if(opList.contains(firstWord)){//passes lines with valid opcodes to Class Opcode
                     if(opCounter == 0){
                         opCounter++;
                     }
-                    opcode.OpcodeHandler(firstWord, newLine, linesToLog, currentLine, labelList, originalLine, numberOfErrors);
+                    opcode.OpcodeMethodHandler(firstWord, newLine, linesToLog, currentLine, labelList, originalLine, numberOfErrors);
                     break;
-                } else if(firstWord.equals(LAST_OPCODE_NAME)){//Catches END opcode & passes to handler
-                    ENDHandler(err);
-                    break;
-                } else if(firstWord.equals(FIRST_OPCODE_NAME)){//Catches SRT opcode & passes to handler
-                    SRTHandler(err);
-                    break;
-                } else if(firstWord.equals("DEF")){//Catches DEF opcode and checks that use is valid
-                    if(opCounter == 1){
-                        err.AddToErrorList(15);
-                        linesToLog.add(currentLine + " " + originalLine);
-                        err.ErrorsToLog(numberOfErrors);
-                        break;
-                    } else{
-                        opcode.OpcodeHandler(firstWord, newLine, linesToLog, currentLine, labelList, originalLine, numberOfErrors);
-                    }
-                } else{//can't match to anything, therefore incorrect opcode
-                    err.AddToErrorList(5);
-                    err.AddToProblemWordList(word);
-                    linesToLog.add(currentLine + " " + originalLine);
-                    err.ErrorsToLog(numberOfErrors);
+                }
+                else{
+                    SpecialOpcodeHandler(err, word);
                     break;
                 }
             }
@@ -178,7 +163,35 @@ public class PALParser {
     }
 
     /**
+     * Handles the validity of special opcodes SRT/END/DEF.
+     * @param err reported to if any errors
+     * @param specOp tested for validity
+     */
+    public void SpecialOpcodeHandler(ErrorHandler err, String specOp){
+        switch(firstWord){
+            case LAST_OPCODE_NAME: ENDHandler(err);
+                break;
+            case FIRST_OPCODE_NAME: SRTHandler(err);
+                break;
+            case "DEF": if(opCounter == 1){
+                            err.AddToErrorList(15);
+                            linesToLog.add(currentLine + " " + originalLine);
+                            err.ErrorsToLog(numberOfErrors);
+                        } else{
+                            opcode.OpcodeMethodHandler(firstWord, newLine, linesToLog, currentLine, labelList, originalLine, numberOfErrors);
+                        }
+                break;
+            default: err.AddToErrorList(5);
+                     err.AddToProblemWordList(specOp);
+                     linesToLog.add(currentLine + " " + originalLine);
+                     err.ErrorsToLog(numberOfErrors);
+                break;
+        }
+    }
+
+    /**
      * Checks that use of SRT opcode is valid.
+     * @param err reported to if any errors
      */
     public void SRTHandler(ErrorHandler err){
         String thisLine = newLine.replace(" ", "");
@@ -196,6 +209,7 @@ public class PALParser {
 
     /**
      * Checks that use of END opcode is valid.
+     * @param err reported to if any errors
      */
     public void ENDHandler(ErrorHandler err){
         String thisLine = newLine.replace(" ", "");
@@ -213,9 +227,10 @@ public class PALParser {
     }
 
     /**
-     * Checks if a line is an incorrect label or a branch instruction
+     * Checks if a originalLine is an incorrect label or a branch instruction
      * containing a label. If it is a branch instruction, it will pass
-     * off to method OpcodeHandler();
+     * off to method OpcodeMethodHandler();
+     * @param err reported to if any errors
      */
     public void LabelHandler(ErrorHandler err){
         if(newLine.contains("BEQ") || newLine.contains("BGT") || newLine.contains("BR")){
@@ -228,8 +243,8 @@ public class PALParser {
         }
     }
     /**
-     * Checks that a line is not empty. If it is not, then it checks
-     * to see if the line is a label or opcode and passes accordingly.
+     * Checks that a originalLine is not empty. If it is not, then it checks
+     * to see if the originalLine is a label or opcode and passes accordingly.
      * If neither, it throws an error.
      */
     public void LabelOrOpcode() {
@@ -259,7 +274,7 @@ public class PALParser {
             Files.write(logFile, linesToLog, Charset.forName("UTF-8"));
         }
         catch(IOException ex){
-            System.out.println("Error writing line to " + logFile);
+            System.out.println("Error writing originalLine to " + logFile);
         }
     }
 
@@ -392,7 +407,7 @@ public class PALParser {
     }
 
     /**
-     * Creates oplist, containing valid opcodes.
+     * Creates opList, containing valid opcodes.
      */
     public void CreateOpList(){
         opList.add("ADD");

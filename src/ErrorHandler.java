@@ -1,26 +1,52 @@
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * Class ErrorHandler takes different error numbers and adds
+ * the correct error messages to the .log file.
+ * Errors are reported here & handled here on a line-by-line basis.
+ * @author Jonathan Nieblas
+ */
 public class ErrorHandler {
+    /** Contains error num types reported to be found in a line. */
     private ArrayList<Integer> errorList = new ArrayList<>();
+    /** Contains words that trigger an error in a line. */
     private ArrayList<String> problemWordList = new ArrayList<>();
+    /** Contains error messages to be reported to .log file.*/
     private List<String> toLogList;
 
+    /**
+     * Takes a linesToLog arrayList for adding errors.
+     * @param list lines to be added to .log file
+     */
     public ErrorHandler(List<String> list){
         this.toLogList = list;
     }
 
-    public void AddToErrorList(int err){
-        errorList.add(err);
+    /**
+     * Allows other Class methods to add errors to errorList.
+     * @param errID error identifier number
+     */
+    public void AddToErrorList(int errID){
+        errorList.add(errID);
     }
 
+    /**
+     * Allows other Class methods to add problem words to
+     * problemWordList.
+     * @param word problem word
+     */
     public void AddToProblemWordList(String word){
         problemWordList.add(word);
     }
 
-    //adds errors to log file
+    /**
+     * Adds specific error messages based on errors found in
+     * numOfErr to .log file.
+     * @param numOfErr contains errors found in a line
+     */
     public void ErrorsToLog(ArrayList<Integer> numOfErr){
-        if(errorList.contains(1) && errorList.contains(3)){
+        if(errorList.contains(1) && errorList.contains(3)){//don't report if Too Few Operands
             errorList.remove(Integer.valueOf(1));
         }
         for(int i : errorList){
@@ -35,10 +61,15 @@ public class ErrorHandler {
         }
     }
 
-    //points to correct error statement for .log
-    public String Errors(int i, String word){
+    /**
+     * Points to correct error statement for .log file.
+     * @param errNum triggered error number
+     * @param word problem word
+     * @return error statement for .log file
+     */
+    public String Errors(int errNum, String word){
         String error = null;
-        switch (i){
+        switch (errNum){
             case 0: error = " ** Wrong Operand Type: Immediate value '"  + word + "' where register was expected.";
                     break;
             case 1: error = " ** Ill-Formed Operand: '" + word + "' is not a valid operand type. Use R0-R7 or a defined variable.";
@@ -76,16 +107,24 @@ public class ErrorHandler {
         return error;
     }
 
-    public void ENDOrSRT(String line, int n, int currentLine, List<String> linesToLog, ArrayList<Integer> numOfErr){
+    /**
+     * Handles an Ill-Formed END/SRT opcode error.
+     * @param line containing END/SRT error
+     * @param n counter signaling 1 = SRT or 0 = END
+     * @param lineCount current line's num in .pal
+     * @param linesToLog for lines & errors to be added to
+     * @param numOfErr contains each type of error encountered
+     */
+    public void ENDOrSRT(String line, int n, int lineCount, List<String> linesToLog, ArrayList<Integer> numOfErr){
         if (n == 0){
             AddToErrorList(8);
             AddToProblemWordList(line);
-            linesToLog.add(currentLine + " " + line);
+            linesToLog.add(lineCount + " " + line);
             ErrorsToLog(numOfErr);
         }else if(n == 1){
             AddToErrorList(9);
             AddToProblemWordList(line);
-            linesToLog.add(currentLine + " " + line);
+            linesToLog.add(lineCount + " " + line);
             ErrorsToLog(numOfErr);
         }
     }

@@ -1,32 +1,43 @@
-/*
- * Opcode contains all methods dealing with opcodes, as well as the construction of the opList arrayList
- */
 import java.util.ArrayList;
 import java.util.List;
-
+/**
+ * Class Opcode takes a line that has been verified to contain an opcode,
+ * passes it to the appropriate opcode method, and verifies if the line
+ * follows PAL syntax rule. If not, passes errors to Class ErrorHandler.
+ * @author Jonathan Nieblas
+ */
 public class Opcode {
-
+    /** Contains valid registers for sources/destinations. */
     private ArrayList<String> validRegisters = new ArrayList<>();
+    /** Stores variables created by DEF opcode; Contains list of valid source/destination names. */
     private ArrayList<String> validVariables = new ArrayList<>();
+    /** Split variable later used to split a line by each comma encountered. */
     private String[] wordSplitter;
 
-    /*
-     * creates arrays when new Opcode obj is created
+    /**
+     * Creates validRegisters ArrayList when created.
      */
     public Opcode (){
-        for(int i = 0; i < 8; i++){//create register list
+        for(int i = 0; i < 8; i++){
             validRegisters.add("R" + i);
         }
     }
 
-    /*
-     * OpcodeHandler will take the opcode and pass the line it was contained in to
-     * the correct method, along with the linesToLog list.
+    /**
+     * Takes information from Class PALParser and searches for the correct
+     * opcode handler.
+     * @param opcode used to find correct opcode method
+     * @param line to be checked for syntax errors
+     * @param linesToLog for lines & errors to be added to
+     * @param lineCount current line's num in .pal
+     * @param labelList containing valid labels
+     * @param originalLine containing comments
+     * @param numOfErr contains each type of error encountered
      */
-    public void OpcodeHandler(String opcode, String line, List<String> linesToLog, int lineCount,
-                                ArrayList<String> labelList, String originalLine, ArrayList<Integer> numOfErr){
-        String newLine = line.replace(opcode, "");//get rid of opcode
-        newLine = newLine.replace(" ", "");//get rid of spaces
+    public void OpcodeMethodHandler(String opcode, String line, List<String> linesToLog, int lineCount,
+                                    ArrayList<String> labelList, String originalLine, ArrayList<Integer> numOfErr){
+        String newLine = line.replace(opcode, "");//removes opcode from statement
+        newLine = newLine.replace(" ", "");//removes spaces from statement
 
         switch(opcode){
             case "ADD":
@@ -51,14 +62,19 @@ public class Opcode {
         }
     }
 
-    /*
-     * Observes an ADD/SUB/MUL/DIV line to make sure there are no errors.
-     * Reports errors to ErrorHandler.
+    /**
+     * Handles a line with ADD/SUB/MUL/DIV opcode and checks
+     * for syntax errors.
+     * @param line receives syntax check
+     * @param linesToLog for lines & errors to be added to
+     * @param lineCount current line's num in .pal
+     * @param originalLine contains comments, spaces, & opcode
+     * @param numOfErr contains each type of error encountered
      */
     public void ASMDOpcode(String line, List<String> linesToLog, int lineCount, String originalLine, ArrayList<Integer> numOfErr){
         int wordCount = 0;
         ErrorHandler err = new ErrorHandler(linesToLog);
-        wordSplitter = line.split(",");//changed to comma
+        wordSplitter = line.split(",");
 
         for(String word : wordSplitter){
             if(wordCount < 4){
@@ -69,9 +85,13 @@ public class Opcode {
         LogListAdder(err, linesToLog, wordCount, lineCount, "ASMD", originalLine, numOfErr);
     }
 
-    /*
-     * Observes a COPY line to make sure there are no errors.
-     * Reports errors to ErrorHandler.
+    /**
+     * Handles a line with COPY opcode and checks for syntax errors.
+     * @param line receives syntax check
+     * @param linesToLog for lines & errors to be added to
+     * @param lineCount current line's num in .pal
+     * @param originalLine contains comments, spaces, & opcode
+     * @param numOfErr contains each type of error encountered
      */
     public void COPYOpcode(String line, List<String> linesToLog, int lineCount, String originalLine, ArrayList<Integer> numOfErr){
         int wordCount = 0;
@@ -84,10 +104,13 @@ public class Opcode {
         LogListAdder(err, linesToLog, wordCount, lineCount, "MC", originalLine, numOfErr);
     }
 
-    /*
-     * Observes a MOVE line to make sure there are no errors.
-     * Reports errors to ErrorHandler.
-     *
+    /**
+     * Handles a line with MOVE opcode and checks for syntax errors.
+     * @param line receives syntax check
+     * @param linesToLog for lines & errors to be added to
+     * @param lineCount current line's num in .pal
+     * @param originalLine contains comments, spaces, & opcode
+     * @param numOfErr contains each type of error encountered
      */
     public void MOVEOpcode(String line, List<String> linesToLog, int lineCount, String originalLine, ArrayList<Integer> numOfErr){
         int wordCount = 0;
@@ -104,10 +127,13 @@ public class Opcode {
         LogListAdder(err, linesToLog, wordCount, lineCount, "MC", originalLine, numOfErr);
     }
 
-    /*
-     * Checks for INC/DEC line to make sure there are no errors.
-     * Uses DestinationChecker instead of SourceChecker bc there is only one operand in this opcode.
-     * Reports errors to ErrorHandler.
+    /**
+     * Handles a line with INC/DEC opcode and checks for syntax errors.
+     * @param line receives syntax check
+     * @param linesToLog for lines & errors to be added to
+     * @param lineCount current line's num in .pal
+     * @param originalLine contains comments, spaces, & opcode
+     * @param numOfErr contains each type of error encountered
      */
     public void IDOpcode(String line, List<String> linesToLog, int lineCount, String originalLine, ArrayList<Integer> numOfErr){
         int wordCount = 0;
@@ -120,9 +146,14 @@ public class Opcode {
         LogListAdder(err, linesToLog, wordCount, lineCount, "ID", originalLine, numOfErr);
     }
 
-    /*
-     * Observes BEQ/BGT lines to make sure they match syntax.
-     * Reports errors if not.
+    /**
+     * Handles a line with BEQ/BGT opcode and checks for syntax errors.
+     * @param line receives syntax check
+     * @param linesToLog for lines & errors to be added to
+     * @param lineCount current line's num in .pal
+     * @param labelList contains pre-created labels
+     * @param originalLine contains comments, spaces, & opcode
+     * @param numOfErr contains each type of error encountered
      */
     public void BEBGOpcode(String line, List<String> linesToLog, int lineCount, ArrayList<String> labelList,
                            String originalLine, ArrayList<Integer> numOfErr){
@@ -148,9 +179,14 @@ public class Opcode {
         LogListAdder(err, linesToLog, wordCount, lineCount, "BEBG", originalLine, numOfErr);
     }
 
-    /*
-     * Observes BR line to make sure it matches syntax.
-     * Reports errors if not.
+    /**
+     * Handles a line with BR opcode and checks for syntax errors.
+     * @param line receives syntax check
+     * @param linesToLog for lines & errors to be added to
+     * @param lineCount current line's num in .pal
+     * @param labelList contains pre-created labels
+     * @param originalLine contains comments, spaces, & opcode
+     * @param numOfErr contains each type of error encountered
      */
     public void BROpcode(String line, List<String> linesToLog, int lineCount, ArrayList<String> labelList,
                          String originalLine, ArrayList<Integer> numOfErr){
@@ -171,6 +207,14 @@ public class Opcode {
         LogListAdder(err, linesToLog, wordCount, lineCount, "BR", originalLine, numOfErr);
     }
 
+    /**
+     * Handles a line with DEF opcode and checks for syntax errors.
+     * @param line receives syntax check
+     * @param linesToLog for lines & errors to be added to
+     * @param lineCount current line's num in .pal
+     * @param originalLine contains comments, spaces, & opcode
+     * @param numOfErr contains each type of error encountered
+     */
     public void DEFOpcode(String line, List<String> linesToLog, int lineCount, String originalLine, ArrayList<Integer> numOfErr){
         int wordCount = 0;
         ErrorHandler err = new ErrorHandler(linesToLog);
@@ -186,8 +230,10 @@ public class Opcode {
         LogListAdder(err, linesToLog, wordCount, lineCount, "DEF", originalLine, numOfErr);
     }
 
-    /*
-     * Finds label in a branch statement. Finds label so it can compare to list of labels
+    /**
+     * Finds a label within a branch instruction's line.
+     * @param originalLine contains a label to be extracted
+     * @return label that was extracted
      */
     public String LabelFinder(String originalLine){
         String label;
@@ -206,8 +252,16 @@ public class Opcode {
         return label;
     }
 
-    /*
-     * Adds correct information to linesToLog ArrayList, as well as error ArrayList
+    /**
+     * Takes info from an opcode handler, passes information to
+     * WordsInLine(), then adds line + errors to .log file.
+     * @param err reported to if any errors
+     * @param linesToLog for lines & errors to be added to
+     * @param wordCount num of split words in a line
+     * @param lineCount current line's num in .pal
+     * @param opcode type of opcode for WordsInLine()
+     * @param originalLine contains comments, spaces, & opcode
+     * @param numOfErr contains each type of error encountered
      */
     public void LogListAdder(ErrorHandler err, List<String> linesToLog, int wordCount, int lineCount,
                              String opcode, String originalLine, ArrayList<Integer> numOfErr){
@@ -216,8 +270,10 @@ public class Opcode {
         err.ErrorsToLog(numOfErr);
     }
 
-    /*
-     * Checks that Registers being used in Source/Destination spots are valid
+    /**
+     * Checks that registers being used in Source/Destination sports are valid
+     * @param err reported to if any errors
+     * @param word valid/invalid register
      */
     public void RegisterChecker(ErrorHandler err, String word){
         if(!validRegisters.contains(word) && !validVariables.contains(word)){
@@ -225,8 +281,11 @@ public class Opcode {
         }
     }
 
-    /*
-     * Checks that Branch is going to existing label.
+    /**
+     * Checks that a branch references an existing label.
+     * @param err reported to if any errors
+     * @param label from branch instruction
+     * @param labelList contains pre-created labels
      */
     public void LabelChecker(ErrorHandler err, String label, ArrayList<String> labelList){
         label = label.trim();
@@ -236,36 +295,41 @@ public class Opcode {
         }
     }
 
-    /*
+    /**
      * Checks to see if the incorrect operand is an immediate value or an ill-formed operand.
-     * Second comparison in if statement catches word with comma (EX: R1,; 22,; wow,;
+     * @param err reported to if any errors
+     * @param word ill-formed operand/immediate value
      */
     public void OperandStringOrInteger(ErrorHandler err, String word){
         word = word.replace(",", "");
         if(word.matches("^-?\\d+$")){
-            err.AddToErrorList(0);//error for immediate value
+            err.AddToErrorList(0);
             err.AddToProblemWordList(word);
         } else {
-            err.AddToErrorList(1);//error for ill-formed operand
+            err.AddToErrorList(1);
             err.AddToProblemWordList(word);
         }
     }
 
-    /*
+    /**
      * Checks that a string is an immediate value.
-     * If not, it informs the ErrorHandler.
+     * @param err reported to if any errors
+     * @param word string to be checked
      */
     public void ShouldBeInteger(ErrorHandler err, String word){
         word = word.replace(",", "");
         if(!word.matches("^-?\\d+$")){
-            err.AddToErrorList(7);//error for immediate value
+            err.AddToErrorList(7);
             err.AddToProblemWordList(word);
         }
     }
 
-    /*
-     * If there are more or less words in a line then there should be,
-     * this will alert the ErrorHandler.
+    /**
+     * Checks the word count in a line based on opcode type.
+     * Used to report if a statement has too many/too few operands.
+     * @param err reported to if any errors
+     * @param wordCount num of split words in a line
+     * @param opcode type of opcode
      */
     public void WordsInLine(ErrorHandler err, int wordCount, String opcode){
         switch(opcode){
@@ -284,8 +348,12 @@ public class Opcode {
         }
     }
 
-    /*
-     * Based on which case is chosen, helps to define if a line has an error in length
+    /**
+     * Takes information from WordsInLine() based on which opcode statement
+     * is being tested and reports correct error.
+     * @param i correct num of words in opcode's statement
+     * @param wordCount num of split words from opcode's statement
+     * @param err reported to if any errors
      */
     public void WordCountError(int i, int wordCount, ErrorHandler err){
         if(wordCount > i){

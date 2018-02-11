@@ -1,5 +1,8 @@
-import java.util.ArrayList;
-
+/**
+ * Class PALDriver for Class PALParser.
+ * Contains the name of the .pal program to be parsed.
+ * @author Jonathan Nieblas
+ */
 public class PALDriver {
     public static void main(String args[]){
 
