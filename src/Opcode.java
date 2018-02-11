@@ -1,7 +1,6 @@
 /*
  * Opcode contains all methods dealing with opcodes, as well as the construction of the opList arrayList
  */
-//****CONSIDER: moving some checkers to the ErrorHandler class. This one is getting busy
 import java.util.ArrayList;
 import java.util.List;
 

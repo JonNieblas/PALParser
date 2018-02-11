@@ -39,23 +39,23 @@ public class ErrorHandler {
     public String Errors(int i, String word){
         String error = null;
         switch (i){
-            case 0: error = " ** Wrong Operand Type: Immediate Value '"  + word + "' Where Register Was Expected.";
+            case 0: error = " ** Wrong Operand Type: Immediate value '"  + word + "' where register was expected.";
                     break;
-            case 1: error = " ** Ill-Formed Operand: '" + word + "' Is Not a Valid Operand Type. Use R0-R7 or a defined variable.";
+            case 1: error = " ** Ill-Formed Operand: '" + word + "' is not a valid operand type. Use R0-R7 or a defined variable.";
                     break;
-            case 2: error = " ** Too Many Operands: You Have Exceeded The Valid Number Of Operands For This Opcode.";
+            case 2: error = " ** Too Many Operands: You have exceeded the valid number of operands for this opcode.";
                     break;
-            case 3: error = " ** Too Few Operands: You Have Not Met The Valid Number Of Operands For This Opcode.";
+            case 3: error = " ** Too Few Operands: You have not met the valid number of operands for this opcode.";
                     break;
-            case 4: error = " ** Ill-Formed Label: '" + word + "' Can't Exceed 12 Chars And Must Contain One Colon."
-                            + "\n ** Colon Must Be At The End Of The Label.";
+            case 4: error = " ** Ill-Formed Label: '" + word + "' can't exceed 12 chars and must contain one colon."
+                            + "\n ** Colon must be at the end of the label.";
                     break;
-            case 5: error = " ** Invalid Opcode: '" + word + "' Is Not a Valid Opcode. Please Review Valid Opcodes "
-                            + "For More Details.";
+            case 5: error = " ** Invalid Opcode: '" + word + "' is not a valid opcode. Please review valid opcodes "
+                            + "for more details.";
                     break;
-            case 6: error = " ** Branches to Non-Existent Label: '" + word + "' Is Not a Label That Was Previously Created.";
+            case 6: error = " ** Branches to Non-Existent Label: '" + word + "' is not a label that was previously created.";
                     break;
-            case 7: error = " ** Wrong Operand Type: String '" + word + "' Where Immediate Value Was Expected.";
+            case 7: error = " ** Wrong Operand Type: Value '" + word + "' where immediate value was expected.";
                     break;
             case 8: error = " ** Ill-Formed Exit Opcode: '" + word + "' is not a valid opcode to end a program with. Try 'END' instead.";
                     break;

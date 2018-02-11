@@ -4,122 +4,168 @@ import java.nio.file.*;
 import java.text.*;
 import java.util.*;
 
+/**
+ * Class PALParser contains void method Parser that reads a PAL assembly language
+ * file, breaks it down line by line, passing it to a series of handlers both in
+ * this class, Class Opcode, and Class ErrorHandler in order to check syntax correctness.
+ * @author Jonathan Nieblas
+ * @version 1.9
+ */
 public class PALParser {
+    /** Opcode object responsible for handling opcodes outside of SRT/END. */
+    Opcode opcode = new Opcode();
 
-    Opcode opcode = new Opcode();//methods contained here will be
+    /** Valid opcode to begin a program with. */
+    private final String FIRST_OPCODE_NAME = "SRT";//valid opcode for beginning of .pal
+    /** Valid opcode to end a program with. */
+    private final String LAST_OPCODE_NAME = "END";//valid opcode for end of .pal
 
-    private final String START = "SRT";//valid opcode for beginning of .pal
-    private final String END = "END";//valid opcode for end of .pal
-    private int startCounter, opCounter = 0;
-
-    private String line = " ";//current line being parsed without comments
-    private String firstWord, fileName, fileNameAppended, originalLine;
+    /** Counters signaling program beginning/end. */
+    private int startCounter;
+    /** Counter signaling when DEF opcode can be used. */
+    private int opCounter;
+    /** Current line num of the .pal file. */
     private int currentLine = 1;//used for error messaging to the user
+    /** Count of the words in a line, for finding first word. */
     private int wordsInLine = 0;//counts words in a line
 
-    private ArrayList<String> opList;//contains valid opcodes
-    private ArrayList<String> labelList= new ArrayList<>();//contains valid labels for branches
+    /** Line to be parsed from .pal file. */
+    private String line = " ";
+    /** Line with comments & other extras (such as spaces) removed. */
+    private String newLine = " ";
+    /** Place holder for comment; will be removed from line. */
+    private String comment = " ";
+    /** Original line without missing comments or spaces. */
+    private String originalLine;
+    /** First word of a line. Helps to separate Opcode from line. */
+    private String firstWord;
+
+    /** Name of .pal file to be parsed with extension. */
+    private String fileName;
+    /** File name with .pal extension removed. */
+    private String fileNameAppended;
+
+    /** Contains all valid opcodes. */
+    private ArrayList<String> opList = new ArrayList<>();//contains valid opcodes
+    /** Stores all valid labels for branches. */
+    private ArrayList<String> labelList = new ArrayList<>();//contains valid labels for branches
+    /** Contains lines to be added to .log file. */
     private List<String> linesToLog = new ArrayList<>();//lines to be printed
+    /** Contains each error in .pal file to be added up at the end. */
     private ArrayList<Integer> numberOfErrors = new ArrayList<>();
 
-    public PALParser(ArrayList<String> opList, String file){
-        this.opList = opList;
+    /** Counters for num of each error in .pal file.*/
+    private int err0 = 0, err1 = 0, err2 = 0, err3 = 0, err4 = 0, err5 = 0, err6 = 0, err7 = 0,
+            err8 = 0, err9 = 0, err10 = 0, err11 = 0, err12 = 0, err13 = 0, err14 = 0, err15 = 0;
+
+    /**
+     * Takes a given list of opcodes and a .pal file and assigns
+     * them accordingly.
+     * @param file to be parsed, given by String fileName;
+     */
+    public PALParser(String file){
         this.fileName = file;
+        CreateOpList();
         fileNameAppended = file.replace(".pal", "");
     }
 
-    /*
-     * Parses a file and prints each line (as of now);
+    /**
+     * Parses a .pal file, passes lines to handlers, and writes
+     * to .log when finished.
      */
     public void Parser() {
         try {
             FileReader fileReader = new FileReader(fileName);
             BufferedReader bufferedReader = new BufferedReader(fileReader);
-            LogHeader(linesToLog);
-            String comment;
-            String newLine;
+            LogHeaderWriter();
 
-            while ((line = bufferedReader.readLine()) != null) {//lines still left in .pal
-                if(line.contains(";") && line.lastIndexOf(';')-1 > -1) {//check for comments
-                    comment = line.substring(line.lastIndexOf(';') - 1);//will take comment
-                    newLine = line.replace(comment, "");//will remove comment from line
-                }else{
-                    newLine = line;
-                }
-                if(newLine.contains(";")){//line that only contains comment
-                    linesToLog.add(currentLine + " " + newLine);
-                    currentLine++;
-                }else {
-                    originalLine = line;
-                    LabelOrOpcode(newLine);
-                }
+            //LINE PARSER
+            while ((line = bufferedReader.readLine()) != null) {
+                CommentHandler();
             }
-            CheckLastLine();//see if last line is valid
-            LogSummary(numberOfErrors);
-            FileWriter(linesToLog);//writes log array to .log file
-            bufferedReader.close();//close process
+            //Closes out parsing of file & writes to .log
+            CheckLastLine();
+            LogSummaryWriter();
+            FileWriter();
+            bufferedReader.close();
         } catch (FileNotFoundException ex) {
-            System.out.println(fileName + " doesn't exist");
+            System.out.println(fileName + " could not be found.");
         } catch (IOException ex) {
-            System.out.println("error reading file " + fileName);
+            System.out.println("Could not read file: " + fileName + ".");
         }
     }
 
-    /*
-     * Checks to see that PAL program's last opcode is "END"
+    /**
+     * Checks if a line contains a comment or is just a comment.
+     */
+    public void CommentHandler(){
+        if(line.contains(";") && line.lastIndexOf(';')-1 > -1) {//check for comments
+            comment = line.substring(line.lastIndexOf(';') - 1);//will take comment
+            newLine = line.replace(comment, "");//will remove comment from line
+        }else{
+            newLine = line;
+        }
+        if(newLine.contains(";")){
+            linesToLog.add(currentLine + " " + newLine);
+        }else{
+            originalLine = line;
+            LabelOrOpcode();
+        }
+    }
+
+    /**
+     * Checks to see that .pal file's last opcode is "END".
      */
     public void CheckLastLine(){
         ErrorHandler err = new ErrorHandler(linesToLog);
         String lastLine = originalLine.trim();
-        if(!lastLine.equals(END)){
+        if(lastLine.contains(comment)){
+            lastLine = lastLine.replace(comment, "");
+        }
+        if(!lastLine.equals(LAST_OPCODE_NAME)){
             err.AddToErrorList(14);
             err.ErrorsToLog(numberOfErrors);
         }
     }
 
-    /*
-     * Parses a line and pin points the first word.
-     * Will compare first word to a selection of opcodes
-     * will continue to split the line, looking for commas/registers
-     * Each source needs to be followed by a comma
-     * possibly make sentence splitters for each operand
+    /**
+     * Takes first word of a line and finds if it's an
+     * opcode, END opcode, START opcode, or DEF opcode.
      */
-    public void OpcodeChecker(String line, ErrorHandler err) {
+    public void OpcodeHandler(ErrorHandler err) {
 
-        String[] wordSplitter = line.split(" ");
+        String[] wordSplitter = newLine.split(" ");
         for (String word : wordSplitter) {
             wordsInLine++;
             firstWord = word;
             if (wordsInLine == 1) {
-                if(opList.contains(firstWord) && startCounter == 0){
+                if(opList.contains(firstWord) && startCounter == 0){//catches opcode before .pal program begins
                     err.AddToErrorList(13);
                     linesToLog.add(currentLine + " " + originalLine);
                     err.ErrorsToLog(numberOfErrors);
                     break;
-                }else if(opList.contains(firstWord)){
+                }else if(opList.contains(firstWord)){//passes lines with valid opcodes to Class Opcode
                     if(opCounter == 0){
                         opCounter++;
                     }
-                    opcode.OpcodeHandler(firstWord, line, linesToLog, currentLine, labelList, originalLine, numberOfErrors);
+                    opcode.OpcodeHandler(firstWord, newLine, linesToLog, currentLine, labelList, originalLine, numberOfErrors);
                     break;
-                } else if(firstWord.equals(END)){
-                    ENDHandler(line, err);
+                } else if(firstWord.equals(LAST_OPCODE_NAME)){//Catches END opcode & passes to handler
+                    ENDHandler(err);
                     break;
-                } else if(firstWord.equals(START)){
-                    SRTHandler(line, err);
+                } else if(firstWord.equals(FIRST_OPCODE_NAME)){//Catches SRT opcode & passes to handler
+                    SRTHandler(err);
                     break;
-                } else if(firstWord.equals("DEF")){
+                } else if(firstWord.equals("DEF")){//Catches DEF opcode and checks that use is valid
                     if(opCounter == 1){
                         err.AddToErrorList(15);
                         linesToLog.add(currentLine + " " + originalLine);
                         err.ErrorsToLog(numberOfErrors);
                         break;
+                    } else{
+                        opcode.OpcodeHandler(firstWord, newLine, linesToLog, currentLine, labelList, originalLine, numberOfErrors);
                     }
-                    else{
-                        opcode.OpcodeHandler(firstWord, line, linesToLog, currentLine, labelList, originalLine, numberOfErrors);
-                    }
-                }
-                else{
+                } else{//can't match to anything, therefore incorrect opcode
                     err.AddToErrorList(5);
                     err.AddToProblemWordList(word);
                     linesToLog.add(currentLine + " " + originalLine);
@@ -128,19 +174,19 @@ public class PALParser {
                 }
             }
         }
-        wordsInLine = 0;//reset counter of words in a line
+        wordsInLine = 0;
     }
 
-    /*
-     * Checks that SRT is used correctly
+    /**
+     * Checks that use of SRT opcode is valid.
      */
-    public void SRTHandler(String line, ErrorHandler err){
-        String newLine = line.replace(" ", "");
-        if(newLine.length() > 3){
-            err.ENDOrSRT(line, 1, currentLine, linesToLog, numberOfErrors);
+    public void SRTHandler(ErrorHandler err){
+        String thisLine = newLine.replace(" ", "");
+        if(thisLine.length() > 3){
+            err.ENDOrSRT(newLine, 1, currentLine, linesToLog, numberOfErrors);
         } else if(startCounter == 1){
             err.AddToErrorList(11);
-            linesToLog.add(currentLine + " " + line);
+            linesToLog.add(currentLine + " " + originalLine);
             err.ErrorsToLog(numberOfErrors);
         } else{
             linesToLog.add(currentLine + " " + originalLine);
@@ -148,81 +194,82 @@ public class PALParser {
         }
     }
 
-    /*
-     * Checks that SRT is used correctly
+    /**
+     * Checks that use of END opcode is valid.
      */
-    public void ENDHandler(String line, ErrorHandler err){
-        String newLine = line.replace(" ", "");
-        if(newLine.length() > 3){
-            err.ENDOrSRT(line, 0, currentLine, linesToLog, numberOfErrors);
+    public void ENDHandler(ErrorHandler err){
+        String thisLine = newLine.replace(" ", "");
+        if(thisLine.length() > 3){
+            err.ENDOrSRT(newLine, 0, currentLine, linesToLog, numberOfErrors);
         } else if(startCounter == 0) {
             err.AddToErrorList(12);
-            linesToLog.add(currentLine + " " + line);
+            linesToLog.add(currentLine + " " + originalLine);
             err.ErrorsToLog(numberOfErrors);
-        }else{
+        } else{
             linesToLog.add(currentLine + " " + originalLine);
             startCounter = 0;
             opCounter = 0;
         }
     }
 
-    /*
-     * Checks if line is a label or a branch instruction
+    /**
+     * Checks if a line is an incorrect label or a branch instruction
+     * containing a label. If it is a branch instruction, it will pass
+     * off to method OpcodeHandler();
      */
-    public void LabelChecker(String line, ErrorHandler err){
-        if(line.contains("BEQ") || line.contains("BGT") || line.contains("BR")){
-            OpcodeChecker(line, err);
+    public void LabelHandler(ErrorHandler err){
+        if(newLine.contains("BEQ") || newLine.contains("BGT") || newLine.contains("BR")){
+            OpcodeHandler(err);
         }else {
             err.AddToErrorList(4);
-            err.AddToProblemWordList(line);
+            err.AddToProblemWordList(newLine);
             linesToLog.add(currentLine + " " + originalLine);
             err.ErrorsToLog(numberOfErrors);
         }
     }
-    /*
-     * Checks that a line is not empty. If it is not, then it checks to see if the line
-     * is a label or opcode.
+    /**
+     * Checks that a line is not empty. If it is not, then it checks
+     * to see if the line is a label or opcode and passes accordingly.
      * If neither, it throws an error.
      */
-    public void LabelOrOpcode(String line) {
+    public void LabelOrOpcode() {
         ErrorHandler err = new ErrorHandler(linesToLog);
-        if (!line.isEmpty() || !line.trim().equals("")) {//if not an empty line
-            if (line.endsWith(":") && line.length() < 12) {//is label
-                labelList.add(line);
-                linesToLog.add(currentLine + " " + line);
-            } else if ((line.contains(":") && !line.endsWith(":")) || (line.contains(":") && line.length() > 11
-                        || (line.contains(":") && line.contains(" ")))){
-                LabelChecker(line, err);
+        if (!newLine.isEmpty() || !newLine.trim().equals("")) {
+            if (newLine.endsWith(":") && newLine.length() < 12) {
+                labelList.add(newLine);
+                linesToLog.add(currentLine + " " + originalLine);
+            } else if ((newLine.contains(":") && !newLine.endsWith(":")) || (newLine.contains(":") && newLine.length() > 11
+                        || (newLine.contains(":") && newLine.contains(" ")))){
+                LabelHandler(err);
             } else{
-                OpcodeChecker(line, err);//split line to find first opcode
+                OpcodeHandler(err);
             }
             currentLine++;
         }
     }
 
-    /*
-     * Takes strings, which will include statements and errors
-     * then adds them to a .log file.
+    /**
+     * Takes an ArrayList containing all lines, errors & comments,
+     * then writes it to a .log file named after the original .pal
+     * file name.
      */
-    public void FileWriter(List<String> list){
+    public void FileWriter(){
         Path logFile = Paths.get(fileNameAppended + ".log");//used for writing to .log file
         try {
-            Files.write(logFile, list, Charset.forName("UTF-8"));
+            Files.write(logFile, linesToLog, Charset.forName("UTF-8"));
         }
         catch(IOException ex){
             System.out.println("Error writing line to " + logFile);
         }
     }
 
-    /*
-     * Adds header to linesToLog
-     * Initially needed in Parser method
+    /**
+     * Adds correct header information to ArrayList linesToLog.
      */
-    public void LogHeader(List<String> list){
+    public void LogHeaderWriter(){
         Date date = new Date();
         DateFormat dateFormat = new SimpleDateFormat("MM-dd-yyyy hh:mm:ss");
 
-        //components of header
         String title = "PAL Error Check";
         String palName = fileNameAppended;
         String logName = fileNameAppended + ".log";
@@ -232,20 +279,37 @@ public class PALParser {
 
         String header = (title + " || " + palName + " || " + logName + " || " + strDate + " || "
                             + myName + " || " + courseName);
-        list.add(header);
-        list.add(" ");
-        list.add("PAL Program Listing:");
-        list.add(" ");
+        linesToLog.add(header);
+        linesToLog.add(" ");
+        linesToLog.add("PAL Program Listing:");
+        linesToLog.add(" ");
     }
 
-    /*
-     * Counts each individual error type present.
-     * Reports a summary of the total count of errors, and how many of each type
-     * were present (if at all).
+    /**
+     * Adds a summary to the .log file after a .pal program
+     * has been parsed.
      */
-    public void LogSummary(ArrayList<Integer> numberOfErrors){
-        int err0 = 0, err1 = 0, err2 = 0, err3 = 0, err4 = 0, err5 = 0, err6 = 0, err7 = 0,
-                err8 = 0, err9 = 0, err10 = 0, err11 = 0, err12 = 0, err13 = 0, err14 = 0, err15 = 0;
+    public void LogSummaryWriter(){
+
+        int totalErrors = CountTotalErrors();
+        linesToLog.add(" ");
+        linesToLog.add("Summary ----------");
+        linesToLog.add(" ");
+        linesToLog.add("total Errors = " + totalErrors);
+        TotalErrorsToLog();
+                if(totalErrors > 0){
+            linesToLog.add("Processing Complete - PAL program is not valid.");
+        } else{
+            linesToLog.add("Processing Complete - PAL program checks out.");
+        }
+    }
+
+    /**
+     * Counts the number of each type of error in the .pal file.
+     * Also, adds up the total number of errors.
+     * @return total num of errors in .pal file
+     */
+    public int CountTotalErrors(){
         for(int i : numberOfErrors){
             switch(i){
                 case 0: err0++;
@@ -282,14 +346,16 @@ public class PALParser {
                     break;
             }
         }
-        int totalErrors = err0 + err1 + err2 + err3 + err4 + err5 + err6 + err7 + err8 + err9 + err10 + err11
-                            + err12 + err13 + err14 + err15;
+        int total = err0 + err1 + err2 + err3 + err4 + err5 + err6 + err7 + err8 + err9 + err10 + err11
+                + err12 + err13 + err14 + err15;
+        return total;
+    }
 
-        linesToLog.add(" ");
-        linesToLog.add("Summary ----------");
-        linesToLog.add(" ");
-        linesToLog.add("total Errors = " + totalErrors);
-
+    /**
+     * Prints total number of each type of error to summary
+     * if any errors are present at all.
+     */
+    public void TotalErrorsToLog(){
         if(err0 > 0){
             linesToLog.add(" " + err0 + " " + "Wrong Operand Type(s)");
         } if(err1 > 0){
@@ -322,10 +388,23 @@ public class PALParser {
             linesToLog.add(" " + err14 + " " + "END Not Detected");
         } if(err15 > 0){
             linesToLog.add(" " + err15 + " " + "Invalid DEF(s)");
-        } if(totalErrors > 0){
-            linesToLog.add("Processing Complete - PAL program is not valid.");
-        } else{
-            linesToLog.add("Processing Complete - PAL program checks out.");
         }
+    }
+
+    /**
+     * Creates oplist, containing valid opcodes.
+     */
+    public void CreateOpList(){
+        opList.add("ADD");
+        opList.add("SUB");
+        opList.add("MUL");
+        opList.add("DIV");
+        opList.add("COPY");
+        opList.add("MOVE");
+        opList.add("INC");
+        opList.add("DEC");
+        opList.add("BEQ");
+        opList.add("BGT");
+        opList.add("BR");
     }
 }

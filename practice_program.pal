@@ -8,6 +8,7 @@ SUB R1, newVar, R3 ;sub these
 newlabel:
 MUL R1, R2, R3, R4 ;easy mul
 
+DEF newVar1, 2999
 DIV R1, var2, R3 ;div here
 ADD R1, R2 ;add now
 COPY R1, R22, R3 ;copy pls
@@ -39,4 +40,5 @@ DEC R1
 
 SRT
 ADD R1, R2, R2
+END ;yayaya
 ;this is the end
