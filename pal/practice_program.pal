@@ -1,0 +1,58 @@
+;;;A mock program containing many issues, each of which is listed
+;;;on their respective line as a comment.
+;;;This program has no actual functionality as a PAL, but more-so
+;;;has the purpose of helping to catch issues with the PALParser
+;;;when they occur.
+;;;@author Jonathan Nieblas
+
+ADD R1, R2, R2          ;code outside of program (1)
+SRT
+DEF newVar, 3209
+DEF newVar2, newVar     ;newVar is not a valid memory space (expects immediate value) (2)
+ADD R1, R2, R2
+SUB R1, newVar, R3
+
+newlabel:
+MUL R1, R2, R3, R4      ;too many operands (3)
+
+defanddivide:
+DEF newVar1, 2999       ;Incorrect usage of DEF (4)
+DIV R1, var2, R3        ;Ill-formed operand: var2 doesn't exist as a variable (5)
+ADD R1, R2              ;Too Few Operands (6)
+COPY R1, R22, R3        ;Ill-formed operand & too many operands (7, 8)
+COPY 22, R2             ;expecting register/variable, not immediate value (9)
+MOVE R1, R1             ;expecting immediate value, not register (10)
+
+COPY R1, R2
+MOVE 13, R6
+
+MOVE 14, noVar          ;invalid operand type, not a reg/var (11)
+
+here:                   ;never used, will trigger warning at the end (12)
+INC 14                  ;wrong operand type (expecting reg) (13)
+DEC R1
+INC R1, R2              ;too many operands (14)
+
+Add R1, R2              ;invalid opcode (15)
+
+BGT R7, R6, defanddivide
+label: here             ;ill-formed label (: should be at the end) (16)
+
+BGT R1, R1, newlabel
+BEQ R1, R1, new label   ;Branches to non existent label (17)
+BGT R1, R1, R1          ;missing label (third R1 should be a label) (18)
+
+
+BR newlabel
+BR new label            ;branches to non-existent label (19)
+
+END
+
+DEC R1                  ;code outside of program (20)
+
+SRT
+ADD R1, R2, R2
+END
+
+;;;Total errors expected: 20
+;;;Should be invalid program

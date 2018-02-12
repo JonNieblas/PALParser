@@ -276,11 +276,15 @@ public class Opcode {
         if(validRegisters.contains(label) || validVariables.contains(label)){
             err.AddToErrorList(10);
             err.AddToProblemWordList(label);
-        } else if(labelList.contains(label)){
+        }
+//        else if(labelList.contains(label)){
+//            encounteredLabels.add(label);
+//        } else{
+//            err.AddToErrorList(6);
+//            err.AddToProblemWordList(label);
+//        }
+        else{
             encounteredLabels.add(label);
-        } else{
-            err.AddToErrorList(6);
-            err.AddToProblemWordList(label);
         }
     }
 

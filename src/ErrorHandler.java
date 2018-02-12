@@ -69,6 +69,9 @@ public class ErrorHandler {
      */
     public String Errors(int errNum, String word){
         String error = null;
+        if(!(word == null)) {
+            word = word.trim();
+        }
         switch (errNum){
             case 0: error = " ** Wrong Operand Type: Immediate value '"  + word + "' where register was expected.";
                     break;
@@ -83,7 +86,7 @@ public class ErrorHandler {
             case 5: error = " ** Invalid Opcode: '" + word + "' is not a valid opcode. Please review valid opcodes "
                             + "for more details.";
                     break;
-            case 6: error = " ** Branches to Non-Existent Label: '" + word + "' is not a label that was previously created.";
+            case 6: error = " ** WARNING - Branches to Non-Existent Label: '" + word + "' is a / are branch(es) that don't exist in the program.";
                     break;
             case 7: error = " ** Wrong Operand Type: Value '" + word + "' where immediate value was expected.";
                     break;
@@ -103,7 +106,7 @@ public class ErrorHandler {
                     break;
             case 15: error = " ** Invalid DEF: All DEFs must be declared after SRT and before any other executable ops.";
                     break;
-            case 16: error = " ** WARNING - Label(s) Not Used: " + word + "was/were not used in the .pal file.";
+            case 16: error = " ** WARNING - Label(s) Not Used: '" + word + "' was/were not used in the .pal file.";
                     break;
         }
         return error;
@@ -129,5 +132,28 @@ public class ErrorHandler {
             linesToLog.add(lineCount + " " + line);
             ErrorsToLog(numOfErr);
         }
+    }
+
+    /**
+     * Takes a list containing labels and checks if they were unused (in the case of labelList)
+     * or if they don't exist, yet were inside of a branch instruction.
+     * @param list labelList or list of non-existent labels
+     * @param numOfErr contains each type of error encountered
+     * @param errNum error number
+     */
+    public void LabelErrorHandler(ArrayList<String> list, ArrayList<Integer> numOfErr, int errNum){
+        String loopWord = "";
+        String labelsNotFound = "";
+     if(!list.isEmpty() ){
+        for(String label : list){
+            if(!(loopWord.equals(label))) {
+                labelsNotFound = labelsNotFound + label + " ";
+            }
+            loopWord = label;
+        }
+        AddToErrorList(errNum);
+        AddToProblemWordList(labelsNotFound);
+        ErrorsToLog(numOfErr);
+    }
     }
 }

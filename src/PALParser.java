@@ -65,6 +65,7 @@ public class PALParser {
         this.fileName = file;
         CreateOpList();
         fileNameAppended = file.replace(".pal", "");
+
     }
 
     /**
@@ -73,7 +74,7 @@ public class PALParser {
      */
     public void Parser() {
         try {
-            FileReader fileReader = new FileReader(fileName);
+            FileReader fileReader = new FileReader("pal/" + fileName);
             BufferedReader bufferedReader = new BufferedReader(fileReader);
             LogHeaderWriter();
 
@@ -254,6 +255,7 @@ public class PALParser {
         String label;
         ErrorHandler err = new ErrorHandler(linesToLog);
         if (!newLine.isEmpty() || !newLine.trim().equals("")) {
+            newLine = newLine.trim();
             if (newLine.endsWith(":") && newLine.length() < 15) {
                 label = newLine.replace(":", "");
                 label = label.trim();
@@ -269,27 +271,23 @@ public class PALParser {
     }
 
     /**
-     * Compares labels that were encountered in branches from the .pal file to
-     * labels that were found. If a label was not used by a branch, an warning
-     * message is shown in the .log file.
+     * Takes two lists, one containing valid labels from the program, another containing labels
+     * that were found in branch instructions, and prepares them to be passed to the LabelErrorHandler
+     * in Class ErrorHandler. This checks to see if there are any unused labels or any labels that don't
+     * exist but were used in branch instructions.
      */
     public void LabelsNotUsed(){
-        String missedLabels = "";
         ErrorHandler err = new ErrorHandler(linesToLog);
+        ErrorHandler err1 = new ErrorHandler(linesToLog);
         ArrayList<String> encounteredLabels = opcode.getEncounteredLabels();
-        for(String label : encounteredLabels){
-            if(labelList.contains(label)){
-                labelList.remove(label);
-            }
-        }
-        if(!labelList.isEmpty()){
-            for(String label : labelList){
-                missedLabels = missedLabels + "'" + label + "' ";
-            }
-            err.AddToErrorList(16);
-            err.AddToProblemWordList(missedLabels);
-            err.ErrorsToLog(numberOfErrors);
-        }
+        ArrayList<String> labelsFound = new ArrayList<>();
+
+        labelsFound.addAll(encounteredLabels);
+        encounteredLabels.removeAll(labelList);//labels that don't exist
+        labelList.removeAll(labelsFound);//labels we didn't use
+
+        err.LabelErrorHandler(labelList, numberOfErrors, 16);//check for any unused labels
+        err1.LabelErrorHandler(encounteredLabels, numberOfErrors, 6);//check for any non-existent labels
     }
 
     /**
@@ -298,7 +296,7 @@ public class PALParser {
      * file name.
      */
     public void FileWriter(){
-        Path logFile = Paths.get(fileNameAppended + ".log");//used for writing to .log file
+        Path logFile = Paths.get("logs/" + fileNameAppended + ".log");//used for writing to .log file
         try {
             Files.write(logFile, linesToLog, Charset.forName("UTF-8"));
         }
@@ -342,9 +340,9 @@ public class PALParser {
         linesToLog.add("total Errors = " + totalErrors);
         TotalErrorsToLog();
                 if(totalErrors > 0){
-            linesToLog.add("Processing Complete - PAL program is not valid.");
+            linesToLog.add("Processing Complete - PAL program is invalid.");
         } else{
-            linesToLog.add("Processing Complete - PAL program checks out.");
+            linesToLog.add("Processing Complete - PAL program is valid.");
         }
     }
 
