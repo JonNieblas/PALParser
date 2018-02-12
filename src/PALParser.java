@@ -97,14 +97,15 @@ public class PALParser {
      * Checks if a originalLine contains a comment or is just a comment.
      */
     public void CommentHandler(){
-        if(originalLine.contains(";") && originalLine.lastIndexOf(';')-1 > -1) {//check for comments
-            comment = originalLine.substring(originalLine.lastIndexOf(';') - 1);//will take comment
+        if(originalLine.contains(";")) {//check for comments
+            comment = originalLine.substring(originalLine.indexOf(";"));
             newLine = originalLine.replace(comment, "");//will remove comment from originalLine
         }else{
             newLine = originalLine;
         }
-        if(newLine.contains(";")){
-            linesToLog.add(currentLine + " " + newLine);
+        if(newLine.isEmpty() && originalLine.contains(";")){
+            linesToLog.add(currentLine + " " + comment);
+            currentLine++;
         }else{
             lastLine = originalLine;
             LabelOrOpcode();
@@ -117,9 +118,10 @@ public class PALParser {
      */
     public void CheckLastLine(){
         ErrorHandler err = new ErrorHandler(linesToLog);
-        lastLine = lastLine.trim();
+        comment = lastLine.substring(lastLine.indexOf(";"));
         if(lastLine.contains(comment)){
             lastLine = lastLine.replace(comment, "");
+            lastLine = lastLine.replace(" ", "");
         }
         if(!lastLine.equals(LAST_OPCODE_NAME)){
             err.AddToErrorList(14);

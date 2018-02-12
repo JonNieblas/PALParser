@@ -1,9 +1,10 @@
+;;;here we go
 ADD R1, R2, R2
 SRT ;try out this comment
 DEF newVar, 3209
 DEF newVar2, newVar
-ADD R1, R2, R2 ;add these two together
-SUB R1, newVar, R3 ;sub these
+ADD R1, R2, R2 ;add these two together;
+SUB R1, newVar, R3 ;;;sub these
 ;hello
 newlabel:
 MUL R1, R2, R3, R4 ;easy mul
