@@ -95,7 +95,7 @@ public class PALParser {
     }
 
     /**
-     * Checks if a originalLine contains a comment or is just a comment.
+     * Checks if an originalLine contains a comment or is just a comment.
      */
     public void CommentHandler(){
         if(originalLine.contains(";")) {//check for comments
@@ -116,7 +116,9 @@ public class PALParser {
      */
     public void CheckLastLine(){
         ErrorHandler err = new ErrorHandler(linesToLog);
-        comment = lastLine.substring(lastLine.indexOf(";"));
+        if(lastLine.contains(";")) {
+            comment = lastLine.substring(lastLine.indexOf(";"));
+        }
         if(lastLine.contains(comment)){
             lastLine = lastLine.replace(comment, "");
             lastLine = lastLine.replace(" ", "");

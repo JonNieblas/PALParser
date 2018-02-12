@@ -8,8 +8,11 @@ public class PALDriver {
 
         //files to be parsed here
         String file = "practice_program.pal";
+        String file1 = "Increment.pal";
 
         PALParser parser1 = new PALParser (file);
+        PALParser parser2 = new PALParser (file1);
         parser1.Parser();
+        parser2.Parser();
     }
 }

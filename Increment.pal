@@ -1,0 +1,9 @@
+SRT
+MOVE 1, R1
+MOVE 100, R2
+
+while:
+INC R1 ;increment R1 until it reaches 100
+BEQ R1, R2, while
+
+END
