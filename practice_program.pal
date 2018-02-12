@@ -9,6 +9,7 @@ SUB R1, newVar, R3 ;;;sub these
 newlabel:
 MUL R1, R2, R3, R4 ;easy mul
 
+defanddivide:
 DEF newVar1, 2999
 DIV R1, var2, R3 ;div here
 ADD R1, R2 ;add now
@@ -21,19 +22,23 @@ MOVE 13, R6
 
 MOVE 14, wowie
 
+here:
 INC 14 ;14++
 DEC R1
 INC R1, R2
 
 Add R1, R2
 
+BGT R7, R6, defanddivide
 label: here ;new label
 
-BGT R1, R1, newlabel: ;alright!
-BEQ R1, R1, new label: ;okay!
+BGT R1, R1, newlabel ;alright!
+BEQ R1, R1, new label ;okay!
+BGT R1, R1, R1
 
-BR newlabel: ;lets try this out
-BR new label: ;lets try this out
+
+BR newlabel ;lets try this out
+BR new label ;lets try this out
 
 END ;this is the end
 

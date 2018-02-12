@@ -54,7 +54,7 @@ public class PALParser {
 
     /** Counters for num of each error in .pal file.*/
     private int err0 = 0, err1 = 0, err2 = 0, err3 = 0, err4 = 0, err5 = 0, err6 = 0, err7 = 0,
-            err8 = 0, err9 = 0, err10 = 0, err11 = 0, err12 = 0, err13 = 0, err14 = 0, err15 = 0;
+            err8 = 0, err9 = 0, err10 = 0, err11 = 0, err12 = 0, err13 = 0, err14 = 0, err15 = 0, err16 = 0;
 
     /**
      * Takes a given list of opcodes and a .pal file and assigns
@@ -83,6 +83,7 @@ public class PALParser {
             }
             //Closes out parsing of file & writes to .log
             CheckLastLine();
+            LabelsNotUsed();
             LogSummaryWriter();
             FileWriter();
             bufferedReader.close();
@@ -103,10 +104,7 @@ public class PALParser {
         }else{
             newLine = originalLine;
         }
-        if(newLine.isEmpty() && originalLine.contains(";")){
-            linesToLog.add(currentLine + " " + comment);
-            currentLine++;
-        }else{
+        if(!newLine.isEmpty()){
             lastLine = originalLine;
             LabelOrOpcode();
         }
@@ -144,7 +142,7 @@ public class PALParser {
             if (wordsInLine == 1) {
                 if(opList.contains(firstWord) && startCounter == 0){//catches opcode before .pal program begins
                     err.AddToErrorList(13);
-                    linesToLog.add(currentLine + " " + originalLine);
+                    linesToLog.add(currentLine + " " + newLine);
                     err.ErrorsToLog(numberOfErrors);
                     break;
                 }
@@ -152,7 +150,7 @@ public class PALParser {
                     if(opCounter == 0){
                         opCounter++;
                     }
-                    opcode.OpcodeMethodHandler(firstWord, newLine, linesToLog, currentLine, labelList, originalLine, numberOfErrors);
+                    opcode.OpcodeMethodHandler(firstWord, newLine, linesToLog, currentLine, labelList, numberOfErrors);
                     break;
                 }
                 else{
@@ -177,15 +175,15 @@ public class PALParser {
                 break;
             case "DEF": if(opCounter == 1){
                             err.AddToErrorList(15);
-                            linesToLog.add(currentLine + " " + originalLine);
+                            linesToLog.add(currentLine + " " + newLine);
                             err.ErrorsToLog(numberOfErrors);
                         } else{
-                            opcode.OpcodeMethodHandler(firstWord, newLine, linesToLog, currentLine, labelList, originalLine, numberOfErrors);
+                            opcode.OpcodeMethodHandler(firstWord, newLine, linesToLog, currentLine, labelList, numberOfErrors);
                         }
                 break;
             default: err.AddToErrorList(5);
                      err.AddToProblemWordList(specOp);
-                     linesToLog.add(currentLine + " " + originalLine);
+                     linesToLog.add(currentLine + " " + newLine);
                      err.ErrorsToLog(numberOfErrors);
                 break;
         }
@@ -201,10 +199,10 @@ public class PALParser {
             err.ENDOrSRT(newLine, 1, currentLine, linesToLog, numberOfErrors);
         } else if(startCounter == 1){
             err.AddToErrorList(11);
-            linesToLog.add(currentLine + " " + originalLine);
+            linesToLog.add(currentLine + " " + newLine);
             err.ErrorsToLog(numberOfErrors);
         } else{
-            linesToLog.add(currentLine + " " + originalLine);
+            linesToLog.add(currentLine + " " + newLine);
             startCounter = 1;
         }
     }
@@ -219,10 +217,10 @@ public class PALParser {
             err.ENDOrSRT(newLine, 0, currentLine, linesToLog, numberOfErrors);
         } else if(startCounter == 0) {
             err.AddToErrorList(12);
-            linesToLog.add(currentLine + " " + originalLine);
+            linesToLog.add(currentLine + " " + newLine);
             err.ErrorsToLog(numberOfErrors);
         } else{
-            linesToLog.add(currentLine + " " + originalLine);
+            linesToLog.add(currentLine + " " + newLine);
             startCounter = 0;
             opCounter = 0;
         }
@@ -230,7 +228,7 @@ public class PALParser {
 
     /**
      * Checks if a originalLine is an incorrect label or a branch instruction
-     * containing a label. If it is a branch instruction, it will pass
+     * containing a label with misplaced colon. If it is a branch instruction, it will pass
      * off to method OpcodeMethodHandler();
      * @param err reported to if any errors
      */
@@ -240,28 +238,55 @@ public class PALParser {
         }else {
             err.AddToErrorList(4);
             err.AddToProblemWordList(newLine);
-            linesToLog.add(currentLine + " " + originalLine);
+            linesToLog.add(currentLine + " " + newLine);
             err.ErrorsToLog(numberOfErrors);
         }
     }
+
     /**
      * Checks that a originalLine is not empty. If it is not, then it checks
      * to see if the originalLine is a label or opcode and passes accordingly.
      * If neither, it throws an error.
      */
     public void LabelOrOpcode() {
+        String label;
         ErrorHandler err = new ErrorHandler(linesToLog);
         if (!newLine.isEmpty() || !newLine.trim().equals("")) {
-            if (newLine.endsWith(":") && newLine.length() < 12) {
-                labelList.add(newLine);
-                linesToLog.add(currentLine + " " + originalLine);
-            } else if ((newLine.contains(":") && !newLine.endsWith(":")) || (newLine.contains(":") && newLine.length() > 11
-                        || (newLine.contains(":") && newLine.contains(" ")))){
+            if (newLine.endsWith(":") && newLine.length() < 15) {
+                label = newLine.replace(":", "");
+                label = label.trim();
+                labelList.add(label);
+                linesToLog.add(currentLine + " " + newLine);
+            } else if ((newLine.contains(":") && !newLine.endsWith(":")) || (newLine.contains(":") && newLine.length() > 15)){
                 LabelHandler(err);
             } else{
                 OpcodeHandler(err);
             }
             currentLine++;
+        }
+    }
+
+    /**
+     * Compares labels that were encountered in branches from the .pal file to
+     * labels that were found. If a label was not used by a branch, an warning
+     * message is shown in the .log file.
+     */
+    public void LabelsNotUsed(){
+        String missedLabels = "";
+        ErrorHandler err = new ErrorHandler(linesToLog);
+        ArrayList<String> encounteredLabels = opcode.getEncounteredLabels();
+        for(String label : encounteredLabels){
+            if(labelList.contains(label)){
+                labelList.remove(label);
+            }
+        }
+        if(!labelList.isEmpty()){
+            for(String label : labelList){
+                missedLabels = missedLabels + "'" + label + "' ";
+            }
+            err.AddToErrorList(16);
+            err.AddToProblemWordList(missedLabels);
+            err.ErrorsToLog(numberOfErrors);
         }
     }
 
@@ -361,10 +386,12 @@ public class PALParser {
                     break;
                 case 15: err15++;
                     break;
+                case 16: err16++;
+                    break;
             }
         }
         int total = err0 + err1 + err2 + err3 + err4 + err5 + err6 + err7 + err8 + err9 + err10 + err11
-                + err12 + err13 + err14 + err15;
+                + err12 + err13 + err14 + err15 + err16;
         return total;
     }
 
@@ -374,37 +401,39 @@ public class PALParser {
      */
     public void TotalErrorsToLog(){
         if(err0 > 0){
-            linesToLog.add(" " + err0 + " " + "Wrong Operand Type(s)");
+            linesToLog.add(" " + err0 + " Wrong Operand Type(s)");
         } if(err1 > 0){
-            linesToLog.add(" " + err1 + " " + "Ill-Formed Operand(s)");
+            linesToLog.add(" " + err1 + " Ill-Formed Operand(s)");
         } if(err2 > 0){
-            linesToLog.add(" " + err2 + " " + "Too Many Operands");
+            linesToLog.add(" " + err2 + " Too Many Operands");
         } if(err3 > 0){
-            linesToLog.add(" " + err3 + " " + "Too Few Operands");
+            linesToLog.add(" " + err3 + " Too Few Operands");
         } if(err4 > 0){
-            linesToLog.add(" " + err4 + " " + "Ill-Formed Label(s)");
+            linesToLog.add(" " + err4 + " Ill-Formed Label(s)");
         } if(err5 > 0){
-            linesToLog.add(" " + err5 + " " + "Invalid Opcode(s)");
+            linesToLog.add(" " + err5 + " Invalid Opcode(s)");
         } if(err6 > 0){
-            linesToLog.add(" " + err6 + " " + "Branches to Non-Existent Label(s)");
+            linesToLog.add(" " + err6 + " Branches to Non-Existent Label(s)");
         } if(err7 > 0){
-            linesToLog.add(" " + err7 + " " + "Wrong Operand Type(s)");
+            linesToLog.add(" " + err7 + " Wrong Operand Type(s)");
         } if(err8 > 0){
-            linesToLog.add(" " + err8 + " " + "Ill-Formed Exit Opcode(s)");
+            linesToLog.add(" " + err8 + " Ill-Formed Exit Opcode(s)");
         } if(err9 > 0){
-            linesToLog.add(" " + err9 + " " + "Ill-Formed Start Opcode(s)");
+            linesToLog.add(" " + err9 + " Ill-Formed Start Opcode(s)");
         } if(err10 > 0){
-            linesToLog.add(" " + err10 + " " + "Missing Label(s) in Branch(es)");
+            linesToLog.add(" " + err10 + " Missing Label(s) in Branch(es)");
         } if(err11 > 0){
-            linesToLog.add(" " + err11 + " " + "Misplaced SRT(s)");
+            linesToLog.add(" " + err11 + " Misplaced SRT(s)");
         } if(err12 > 0){
-            linesToLog.add(" " + err12 + " " + "Misplaced END(s)");
+            linesToLog.add(" " + err12 + " Misplaced END(s)");
         } if(err13 > 0){
-            linesToLog.add(" " + err13 + " " + "Code(s) Outside of Program");
+            linesToLog.add(" " + err13 + " Code(s) Outside of Program");
         } if(err14 > 0){
-            linesToLog.add(" " + err14 + " " + "END Not Detected");
+            linesToLog.add(" " + err14 + " END Not Detected");
         } if(err15 > 0){
-            linesToLog.add(" " + err15 + " " + "Invalid DEF(s)");
+            linesToLog.add(" " + err15 + " Invalid DEF(s)");
+        } if(err16 > 0){
+            linesToLog.add(" " + err16 + " Label(s) Not Used Warning");
         }
     }
 

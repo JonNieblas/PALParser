@@ -50,7 +50,7 @@ public class ErrorHandler {
             errorList.remove(Integer.valueOf(1));
         }
         for(int i : errorList){
-            if(i == 0 || i == 1 || i == 4 || i == 5 || i == 6 || i == 7 || i == 8 || i == 9 || i == 10) {
+            if(i == 0 || i == 1 || i == 4 || i == 5 || i == 6 || i == 7 || i == 8 || i == 9 || i == 10 || i == 16) {
                 toLogList.add(Errors(i, problemWordList.get(0)));
                 numOfErr.add(i);
             }
@@ -78,8 +78,7 @@ public class ErrorHandler {
                     break;
             case 3: error = " ** Too Few Operands: You have not met the valid number of operands for this opcode.";
                     break;
-            case 4: error = " ** Ill-Formed Label: '" + word + "' can't exceed 12 chars and must contain one colon."
-                            + "\n ** Colon must be at the end of the label.";
+            case 4: error = " ** Ill-Formed Label: '" + word + "' exceeds 15 characters or colon is not at the end of the label.";
                     break;
             case 5: error = " ** Invalid Opcode: '" + word + "' is not a valid opcode. Please review valid opcodes "
                             + "for more details.";
@@ -92,7 +91,7 @@ public class ErrorHandler {
                     break;
             case 9: error = " ** Ill-Formed Start Opcode: '" + word + "' is not a valid opcode to start a program with. Try 'SRT' instead.";
                     break;
-            case 10: error = " ** Missing Label in Branch: '" + word + "' is not label. Please replace with a valid label.";
+            case 10: error = " ** Missing Label in Branch: '" + word + "' is not a label. Please replace with a valid label.";
                     break;
             case 11: error = " ** Misplaced SRT: Can't start a new program until this one has ended";
                     break;
@@ -103,6 +102,9 @@ public class ErrorHandler {
             case 14: error = " ** END Not Detected: All PAL programs must conclude with END opcode.";
                     break;
             case 15: error = " ** Invalid DEF: All DEFs must be declared after SRT and before any other executable ops.";
+                    break;
+            case 16: error = " ** WARNING - Label(s) Not Used: " + word + "was/were not used in the .pal file.";
+                    break;
         }
         return error;
     }

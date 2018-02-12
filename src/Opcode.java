@@ -11,8 +11,11 @@ public class Opcode {
     private ArrayList<String> validRegisters = new ArrayList<>();
     /** Stores variables created by DEF opcode; Contains list of valid source/destination names. */
     private ArrayList<String> validVariables = new ArrayList<>();
+    /** Stores every valid label that was branched to. Compared to original Label List for error 16.*/
+    private ArrayList<String> encounteredLabels = new ArrayList<>();
     /** Split variable later used to split a line by each comma encountered. */
     private String[] wordSplitter;
+
 
     /**
      * Creates validRegisters ArrayList when created.
@@ -31,11 +34,10 @@ public class Opcode {
      * @param linesToLog for lines & errors to be added to
      * @param lineCount current line's num in .pal
      * @param labelList containing valid labels
-     * @param originalLine containing comments
      * @param numOfErr contains each type of error encountered
      */
     public void OpcodeMethodHandler(String opcode, String line, List<String> linesToLog, int lineCount,
-                                    ArrayList<String> labelList, String originalLine, ArrayList<Integer> numOfErr){
+                                    ArrayList<String> labelList, ArrayList<Integer> numOfErr){
         String newLine = line.replace(opcode, "");//removes opcode from statement
         newLine = newLine.replace(" ", "");//removes spaces from statement
 
@@ -43,21 +45,21 @@ public class Opcode {
             case "ADD":
             case "SUB":
             case "MUL":
-            case "DIV": ASMDOpcode(newLine, linesToLog, lineCount, originalLine, numOfErr);
+            case "DIV": ASMDOpcode(newLine, linesToLog, lineCount, line, numOfErr);
                 break;
-            case "COPY": COPYOpcode(newLine, linesToLog, lineCount, originalLine, numOfErr);
+            case "COPY": COPYOpcode(newLine, linesToLog, lineCount, line, numOfErr);
                 break;
-            case "MOVE": MOVEOpcode(newLine, linesToLog, lineCount, originalLine, numOfErr);
+            case "MOVE": MOVEOpcode(newLine, linesToLog, lineCount, line, numOfErr);
                 break;
             case "INC":
-            case "DEC": IDOpcode(newLine, linesToLog, lineCount, originalLine, numOfErr);
+            case "DEC": IDOpcode(newLine, linesToLog, lineCount, line, numOfErr);
                 break;
             case "BEQ":
-            case "BGT": BEBGOpcode(newLine, linesToLog, lineCount, labelList, originalLine, numOfErr);
+            case "BGT": BEBGOpcode(newLine, linesToLog, lineCount, labelList, line, numOfErr);
                 break;
-            case "BR": BROpcode (newLine, linesToLog, lineCount, labelList, originalLine, numOfErr);
+            case "BR": BROpcode (newLine, linesToLog, lineCount, labelList, line, numOfErr);
                 break;
-            case "DEF": DEFOpcode(newLine, linesToLog, lineCount, originalLine, numOfErr);
+            case "DEF": DEFOpcode(newLine, linesToLog, lineCount, line, numOfErr);
                 break;
         }
     }
@@ -65,16 +67,16 @@ public class Opcode {
     /**
      * Handles a line with ADD/SUB/MUL/DIV opcode and checks
      * for syntax errors.
-     * @param line receives syntax check
+     * @param newLine receives syntax check
      * @param linesToLog for lines & errors to be added to
      * @param lineCount current line's num in .pal
-     * @param originalLine contains comments, spaces, & opcode
+     * @param originalLine original line -comments
      * @param numOfErr contains each type of error encountered
      */
-    public void ASMDOpcode(String line, List<String> linesToLog, int lineCount, String originalLine, ArrayList<Integer> numOfErr){
+    public void ASMDOpcode(String newLine, List<String> linesToLog, int lineCount, String originalLine, ArrayList<Integer> numOfErr){
         int wordCount = 0;
         ErrorHandler err = new ErrorHandler(linesToLog);
-        wordSplitter = line.split(",");
+        wordSplitter = newLine.split(",");
 
         for(String word : wordSplitter){
             if(wordCount < 4){
@@ -87,16 +89,16 @@ public class Opcode {
 
     /**
      * Handles a line with COPY opcode and checks for syntax errors.
-     * @param line receives syntax check
+     * @param newLine receives syntax check
      * @param linesToLog for lines & errors to be added to
      * @param lineCount current line's num in .pal
-     * @param originalLine contains comments, spaces, & opcode
+     * @param originalLine original line -comments
      * @param numOfErr contains each type of error encountered
      */
-    public void COPYOpcode(String line, List<String> linesToLog, int lineCount, String originalLine, ArrayList<Integer> numOfErr){
+    public void COPYOpcode(String newLine, List<String> linesToLog, int lineCount, String originalLine, ArrayList<Integer> numOfErr){
         int wordCount = 0;
         ErrorHandler err = new ErrorHandler(linesToLog);
-        wordSplitter = line.split(",");
+        wordSplitter = newLine.split(",");
         for(String word : wordSplitter){
             RegisterChecker(err, word);
             wordCount++;
@@ -106,16 +108,16 @@ public class Opcode {
 
     /**
      * Handles a line with MOVE opcode and checks for syntax errors.
-     * @param line receives syntax check
+     * @param newLine receives syntax check
      * @param linesToLog for lines & errors to be added to
      * @param lineCount current line's num in .pal
-     * @param originalLine contains comments, spaces, & opcode
+     * @param originalLine original line- comments
      * @param numOfErr contains each type of error encountered
      */
-    public void MOVEOpcode(String line, List<String> linesToLog, int lineCount, String originalLine, ArrayList<Integer> numOfErr){
+    public void MOVEOpcode(String newLine, List<String> linesToLog, int lineCount, String originalLine, ArrayList<Integer> numOfErr){
         int wordCount = 0;
         ErrorHandler err = new ErrorHandler(linesToLog);
-        wordSplitter = line.split(",");
+        wordSplitter = newLine.split(",");
         for(String word : wordSplitter){
             if(wordCount == 0){
                 ShouldBeInteger(err, word);
@@ -129,16 +131,16 @@ public class Opcode {
 
     /**
      * Handles a line with INC/DEC opcode and checks for syntax errors.
-     * @param line receives syntax check
+     * @param newLine receives syntax check
      * @param linesToLog for lines & errors to be added to
      * @param lineCount current line's num in .pal
      * @param originalLine contains comments, spaces, & opcode
      * @param numOfErr contains each type of error encountered
      */
-    public void IDOpcode(String line, List<String> linesToLog, int lineCount, String originalLine, ArrayList<Integer> numOfErr){
+    public void IDOpcode(String newLine, List<String> linesToLog, int lineCount, String originalLine, ArrayList<Integer> numOfErr){
         int wordCount = 0;
         ErrorHandler err = new ErrorHandler(linesToLog);
-        wordSplitter = line.split(",");
+        wordSplitter = newLine.split(",");
         for(String word : wordSplitter){
             RegisterChecker(err, word);
             wordCount++;
@@ -148,77 +150,66 @@ public class Opcode {
 
     /**
      * Handles a line with BEQ/BGT opcode and checks for syntax errors.
-     * @param line receives syntax check
+     * @param newLine receives syntax check
      * @param linesToLog for lines & errors to be added to
      * @param lineCount current line's num in .pal
      * @param labelList contains pre-created labels
      * @param originalLine contains comments, spaces, & opcode
      * @param numOfErr contains each type of error encountered
      */
-    public void BEBGOpcode(String line, List<String> linesToLog, int lineCount, ArrayList<String> labelList,
+    public void BEBGOpcode(String newLine, List<String> linesToLog, int lineCount, ArrayList<String> labelList,
                            String originalLine, ArrayList<Integer> numOfErr){
         int wordCount = 0;
-        String label = LabelFinder(originalLine);
+        String label = LabelFinder(originalLine).trim();
         ErrorHandler err = new ErrorHandler(linesToLog);
-        wordSplitter = line.split(",");
+        wordSplitter = newLine.split(",");
         for(String word : wordSplitter){
             if(wordCount < 2){
                 RegisterChecker(err, word);
-                wordCount++;
-            }else if (wordCount == 2){
-                if(!validRegisters.contains(word) && !word.contains(":")){
-                    err.AddToErrorList(10);
-                    err.AddToProblemWordList(word);
-                }
-                wordCount++;
-            }else{
-                wordCount++;
+            }else if (wordCount == 2) {
+                LabelChecker(err, label, labelList);
             }
+            wordCount++;
         }
-        LabelChecker(err, label, labelList);
         LogListAdder(err, linesToLog, wordCount, lineCount, "BEBG", originalLine, numOfErr);
     }
 
     /**
      * Handles a line with BR opcode and checks for syntax errors.
-     * @param line receives syntax check
+     * @param newLine receives syntax check
      * @param linesToLog for lines & errors to be added to
      * @param lineCount current line's num in .pal
      * @param labelList contains pre-created labels
      * @param originalLine contains comments, spaces, & opcode
      * @param numOfErr contains each type of error encountered
      */
-    public void BROpcode(String line, List<String> linesToLog, int lineCount, ArrayList<String> labelList,
+    public void BROpcode(String newLine, List<String> linesToLog, int lineCount, ArrayList<String> labelList,
                          String originalLine, ArrayList<Integer> numOfErr){
         int wordCount = 0;
-        String label = LabelFinder(originalLine);
+        String label = LabelFinder(originalLine).trim();
         ErrorHandler err = new ErrorHandler(linesToLog);
-        wordSplitter = line.split(",");
+        wordSplitter = newLine.split(",");
         for(String word : wordSplitter){
             if(wordCount == 0){
-                if(!word.contains(":")){
-                    err.AddToErrorList(10);
-                    err.AddToProblemWordList(word);
-                }
+                LabelChecker(err, label, labelList);
             }
             wordCount++;
         }
-        LabelChecker(err, label, labelList);
         LogListAdder(err, linesToLog, wordCount, lineCount, "BR", originalLine, numOfErr);
     }
 
     /**
      * Handles a line with DEF opcode and checks for syntax errors.
-     * @param line receives syntax check
+     * @param newLine receives syntax check
      * @param linesToLog for lines & errors to be added to
      * @param lineCount current line's num in .pal
      * @param originalLine contains comments, spaces, & opcode
      * @param numOfErr contains each type of error encountered
      */
-    public void DEFOpcode(String line, List<String> linesToLog, int lineCount, String originalLine, ArrayList<Integer> numOfErr){
+    public void DEFOpcode(String newLine, List<String> linesToLog, int lineCount, String originalLine, ArrayList<Integer> numOfErr){
         int wordCount = 0;
         ErrorHandler err = new ErrorHandler(linesToLog);
-        wordSplitter = line.split(",");
+        wordSplitter = newLine.split(",");
         for(String word : wordSplitter){
             if(wordCount == 0){
                 validVariables.add(word);
@@ -237,15 +228,9 @@ public class Opcode {
      */
     public String LabelFinder(String originalLine){
         String label;
-        if (originalLine.contains(";")) {
-            String comment = originalLine.substring(originalLine.lastIndexOf(';'));
-            label = originalLine.replace(comment, "");
-            if(label.contains(",")) {
-                label = label.substring(label.lastIndexOf(','));
-                label = label.replace(",", "");
-            }else{
-                label = label.replace("BR", "");
-            }
+        if (originalLine.contains("BEQ") || originalLine.contains("BGT")) {
+            label = originalLine.substring(originalLine.lastIndexOf(','));
+            label = label.replace(",","");
         }else{
             label = originalLine.replace("BR", " ");
         }
@@ -260,13 +245,13 @@ public class Opcode {
      * @param wordCount num of split words in a line
      * @param lineCount current line's num in .pal
      * @param opcode type of opcode for WordsInLine()
-     * @param originalLine contains comments, spaces, & opcode
+     * @param line original line
      * @param numOfErr contains each type of error encountered
      */
     public void LogListAdder(ErrorHandler err, List<String> linesToLog, int wordCount, int lineCount,
-                             String opcode, String originalLine, ArrayList<Integer> numOfErr){
+                             String opcode, String line, ArrayList<Integer> numOfErr){
         WordsInLine(err, wordCount, opcode);
-        linesToLog.add(lineCount + " " + originalLine);
+        linesToLog.add(lineCount + " " + line);
         err.ErrorsToLog(numOfErr);
     }
 
@@ -282,14 +267,18 @@ public class Opcode {
     }
 
     /**
-     * Checks that a branch references an existing label.
+     * Checks that a branch references an existing label or a valid label.
      * @param err reported to if any errors
      * @param label from branch instruction
      * @param labelList contains pre-created labels
      */
     public void LabelChecker(ErrorHandler err, String label, ArrayList<String> labelList){
-        label = label.trim();
-        if(!labelList.contains(label)){
+        if(validRegisters.contains(label) || validVariables.contains(label)){
+            err.AddToErrorList(10);
+            err.AddToProblemWordList(label);
+        } else if(labelList.contains(label)){
+            encounteredLabels.add(label);
+        } else{
             err.AddToErrorList(6);
             err.AddToProblemWordList(label);
         }
@@ -360,5 +349,9 @@ public class Opcode {
             err.AddToErrorList(2);
         } else if(wordCount < i){
             err.AddToErrorList(3); }
+    }
+
+    public ArrayList<String> getEncounteredLabels(){
+        return this.encounteredLabels;
     }
 }
