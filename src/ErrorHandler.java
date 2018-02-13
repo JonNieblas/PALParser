@@ -86,7 +86,7 @@ public class ErrorHandler {
             case 5: error = " ** Invalid Opcode: '" + word + "' is not a valid opcode. Please review valid opcodes "
                             + "for more details.";
                     break;
-            case 6: error = " ** WARNING - Branches to Non-Existent Label: '" + word + "' is a / are branch(es) that don't exist in the program.";
+            case 6: error = " ** WARNING - Branches to Non-Existent Label: '" + word + "' doesn't exist in the program.";
                     break;
             case 7: error = " ** Wrong Operand Type: Value '" + word + "' where immediate value was expected.";
                     break;
@@ -106,7 +106,7 @@ public class ErrorHandler {
                     break;
             case 15: error = " ** Invalid DEF: All DEFs must be declared after SRT and before any other executable ops.";
                     break;
-            case 16: error = " ** WARNING - Label(s) Not Used: '" + word + "' was/were not used in the .pal file.";
+            case 16: error = " ** WARNING - Label(s) Not Used: '" + word + "' was/were unused in the program.";
                     break;
         }
         return error;
@@ -144,16 +144,34 @@ public class ErrorHandler {
     public void LabelErrorHandler(ArrayList<String> list, ArrayList<Integer> numOfErr, int errNum){
         String loopWord = "";
         String labelsNotFound = "";
-     if(!list.isEmpty() ){
-        for(String label : list){
-            if(!(loopWord.equals(label))) {
-                labelsNotFound = labelsNotFound + label + " ";
+        if(!list.isEmpty() ){
+            for(String label : list){
+                if(!(loopWord.equals(label))) {
+                    labelsNotFound = labelsNotFound + label + ": ";
+                }
+                loopWord = label;
             }
-            loopWord = label;
+            AddToErrorList(errNum);
+            AddToProblemWordList(labelsNotFound);
+            ErrorsToLog(numOfErr);
         }
-        AddToErrorList(errNum);
-        AddToProblemWordList(labelsNotFound);
-        ErrorsToLog(numOfErr);
     }
+
+    /**
+     * Takes an error and writes message to log.
+     * @param errID - specific error number
+     * @param problemWord - word that caused error
+     * @param linesToLog - contains lines to be written to .log
+     * @param lineCount - line number parser is on
+     * @param line - no comments; written to log
+     * @param numOfErr - stores collective num of errors in .pal
+     */
+    public void AssignErrors(int errID, String problemWord, List<String> linesToLog, int lineCount, String line, ArrayList<Integer> numOfErr){
+        AddToErrorList(errID);
+        if (!problemWord.equals(" ")) {
+            AddToProblemWordList(problemWord);
+        }
+        linesToLog.add(lineCount + " " + line);
+        ErrorsToLog(numOfErr);
     }
 }

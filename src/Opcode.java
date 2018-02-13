@@ -37,7 +37,7 @@ public class Opcode {
      * @param numOfErr contains each type of error encountered
      */
     public void OpcodeMethodHandler(String opcode, String line, List<String> linesToLog, int lineCount,
-                                    ArrayList<String> labelList, ArrayList<Integer> numOfErr){
+                                    ArrayList<String> labelList, ArrayList<Integer> numOfErr, String ogLine){
         String newLine = line.replace(opcode, "");//removes opcode from statement
         newLine = newLine.replace(" ", "");//removes spaces from statement
 
@@ -45,21 +45,21 @@ public class Opcode {
             case "ADD":
             case "SUB":
             case "MUL":
-            case "DIV": ASMDOpcode(newLine, linesToLog, lineCount, line, numOfErr);
+            case "DIV": ASMDOpcode(newLine, linesToLog, lineCount, ogLine, numOfErr);
                 break;
-            case "COPY": COPYOpcode(newLine, linesToLog, lineCount, line, numOfErr);
+            case "COPY": COPYOpcode(newLine, linesToLog, lineCount, ogLine, numOfErr);
                 break;
-            case "MOVE": MOVEOpcode(newLine, linesToLog, lineCount, line, numOfErr);
+            case "MOVE": MOVEOpcode(newLine, linesToLog, lineCount, ogLine, numOfErr);
                 break;
             case "INC":
-            case "DEC": IDOpcode(newLine, linesToLog, lineCount, line, numOfErr);
+            case "DEC": IDOpcode(newLine, linesToLog, lineCount, ogLine, numOfErr);
                 break;
             case "BEQ":
-            case "BGT": BEBGOpcode(newLine, linesToLog, lineCount, labelList, line, numOfErr);
+            case "BGT": BEBGOpcode(newLine, linesToLog, lineCount, labelList, ogLine, numOfErr);
                 break;
-            case "BR": BROpcode (newLine, linesToLog, lineCount, labelList, line, numOfErr);
+            case "BR": BROpcode (newLine, linesToLog, lineCount, labelList, ogLine, numOfErr);
                 break;
-            case "DEF": DEFOpcode(newLine, linesToLog, lineCount, line, numOfErr);
+            case "DEF": DEFOpcode(newLine, linesToLog, lineCount, ogLine, numOfErr);
                 break;
         }
     }

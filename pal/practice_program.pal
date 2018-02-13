@@ -36,23 +36,23 @@ INC R1, R2              ;too many operands (14)
 Add R1, R2              ;invalid opcode (15)
 
 BGT R7, R6, defanddivide
-label: here             ;ill-formed label (: should be at the end) (16)
+label: here
 
 BGT R1, R1, newlabel
-BEQ R1, R1, new label   ;Branches to non existent label (17)
-BGT R1, R1, R1          ;missing label (third R1 should be a label) (18)
+BEQ R1, R1, new label   ;Branches to non existent label (16)
+BGT R1, R1, R1          ;missing label (third R1 should be a label) (17)
 
 
 BR newlabel
-BR new label            ;branches to non-existent label (19)
+BR new label            ;branches to non-existent label (18)
 
 END
 
-DEC R1                  ;code outside of program (20)
+DEC R1                  ;code outside of program (19)
 
 SRT
 ADD R1, R2, R2
-END
+Done: END
 
-;;;Total errors expected: 20
+;;;Total errors expected: 19
 ;;;Should be invalid program

@@ -27,7 +27,7 @@ public class PALParser {
     /** Count of the words in a originalLine, for finding first word. */
     private int wordsInLine = 0;//counts words in a originalLine
 
-    /** Line to be parsed from .pal file. */
+    /** Line to be parsed from .pal file. Will contain a label w/ no comments*/
     private String originalLine = " ";
     /** Line with comments & other extras (such as spaces) removed. */
     private String newLine = " ";
@@ -102,11 +102,13 @@ public class PALParser {
         if(originalLine.contains(";")) {//check for comments
             comment = originalLine.substring(originalLine.indexOf(";"));
             newLine = originalLine.replace(comment, "");//will remove comment from originalLine
+            originalLine = newLine.trim();
         }else{
-            newLine = originalLine;
+            newLine = originalLine.trim();
+            originalLine = originalLine.trim();
         }
         if(!newLine.isEmpty()){
-            lastLine = originalLine;
+            lastLine = originalLine.trim();
             LabelOrOpcode();
         }
     }
@@ -124,6 +126,9 @@ public class PALParser {
             lastLine = lastLine.replace(comment, "");
             lastLine = lastLine.replace(" ", "");
         }
+        if(lastLine.contains(":")){
+            lastLine = lastLine.substring(lastLine.indexOf(":") + 1).trim();
+        }
         if(!lastLine.equals(LAST_OPCODE_NAME)){
             err.AddToErrorList(14);
             err.ErrorsToLog(numberOfErrors);
@@ -136,7 +141,7 @@ public class PALParser {
      * opcode is SRT/END/DEF or not recognized.
      * @param err reported to if any errors
      */
-    public void OpcodeHandler(ErrorHandler err) {
+    public void OpcodeHandler(ErrorHandler err, String newLine) {
 
         String[] wordSplitter = newLine.split(" ");
         for (String word : wordSplitter) {
@@ -144,20 +149,18 @@ public class PALParser {
             firstWord = word;
             if (wordsInLine == 1) {
                 if(opList.contains(firstWord) && startCounter == 0){//catches opcode before .pal program begins
-                    err.AddToErrorList(13);
-                    linesToLog.add(currentLine + " " + newLine);
-                    err.ErrorsToLog(numberOfErrors);
+                    err.AssignErrors(13, " ", linesToLog, currentLine, originalLine, numberOfErrors);
                     break;
                 }
                 else if(opList.contains(firstWord)){//passes lines with valid opcodes to Class Opcode
                     if(opCounter == 0){
                         opCounter++;
                     }
-                    opcode.OpcodeMethodHandler(firstWord, newLine, linesToLog, currentLine, labelList, numberOfErrors);
+                    opcode.OpcodeMethodHandler(firstWord, newLine, linesToLog, currentLine, labelList, numberOfErrors, originalLine);
                     break;
                 }
                 else{
-                    SpecialOpcodeHandler(err, word);
+                    SpecialOpcodeHandler(err, word, newLine);
                     break;
                 }
             }
@@ -167,27 +170,28 @@ public class PALParser {
 
     /**
      * Handles the validity of special opcodes SRT/END/DEF.
+     * Also handles unrecognized opcodes and sends errors to ErrorHandler.
      * @param err reported to if any errors
      * @param specOp tested for validity
      */
-    public void SpecialOpcodeHandler(ErrorHandler err, String specOp){
+    public void SpecialOpcodeHandler(ErrorHandler err, String specOp, String newLine){
         switch(firstWord){
-            case LAST_OPCODE_NAME: ENDHandler(err);
+            case LAST_OPCODE_NAME: ENDHandler(err, newLine);
                 break;
-            case FIRST_OPCODE_NAME: SRTHandler(err);
+            case FIRST_OPCODE_NAME: SRTHandler(err, newLine);
                 break;
             case "DEF": if(opCounter == 1){
-                            err.AddToErrorList(15);
-                            linesToLog.add(currentLine + " " + newLine);
-                            err.ErrorsToLog(numberOfErrors);
+                              err.AssignErrors(15, " ", linesToLog, currentLine, originalLine, numberOfErrors);
+
                         } else{
-                            opcode.OpcodeMethodHandler(firstWord, newLine, linesToLog, currentLine, labelList, numberOfErrors);
+                            opcode.OpcodeMethodHandler(firstWord, newLine, linesToLog, currentLine, labelList, numberOfErrors, originalLine);
                         }
                 break;
-            default: err.AddToErrorList(5);
-                     err.AddToProblemWordList(specOp);
-                     linesToLog.add(currentLine + " " + newLine);
-                     err.ErrorsToLog(numberOfErrors);
+            default: if(startCounter == 0){
+                            err.AssignErrors(13, " ", linesToLog, currentLine, originalLine, numberOfErrors);
+                     } else {
+                            err.AssignErrors(5, specOp, linesToLog, currentLine, originalLine, numberOfErrors);
+                     }
                 break;
         }
     }
@@ -196,16 +200,14 @@ public class PALParser {
      * Checks that use of SRT opcode is valid.
      * @param err reported to if any errors
      */
-    public void SRTHandler(ErrorHandler err){
+    public void SRTHandler(ErrorHandler err, String newLine){
         String thisLine = newLine.replace(" ", "");
         if(thisLine.length() > 3){
-            err.ENDOrSRT(newLine, 1, currentLine, linesToLog, numberOfErrors);
+            err.ENDOrSRT(originalLine, 1, currentLine, linesToLog, numberOfErrors);
         } else if(startCounter == 1){
-            err.AddToErrorList(11);
-            linesToLog.add(currentLine + " " + newLine);
-            err.ErrorsToLog(numberOfErrors);
+            err.AssignErrors(11, " ", linesToLog, currentLine, originalLine, numberOfErrors);
         } else{
-            linesToLog.add(currentLine + " " + newLine);
+            linesToLog.add(currentLine + " " + originalLine);
             startCounter = 1;
         }
     }
@@ -214,35 +216,17 @@ public class PALParser {
      * Checks that use of END opcode is valid.
      * @param err reported to if any errors
      */
-    public void ENDHandler(ErrorHandler err){
+    public void ENDHandler(ErrorHandler err, String newLine){
         String thisLine = newLine.replace(" ", "");
         if(thisLine.length() > 3){
-            err.ENDOrSRT(newLine, 0, currentLine, linesToLog, numberOfErrors);
+            err.ENDOrSRT(originalLine, 0, currentLine, linesToLog, numberOfErrors);
         } else if(startCounter == 0) {
-            err.AddToErrorList(12);
-            linesToLog.add(currentLine + " " + newLine);
-            err.ErrorsToLog(numberOfErrors);
+            err.AssignErrors(12, " ", linesToLog, currentLine, originalLine, numberOfErrors);
+
         } else{
-            linesToLog.add(currentLine + " " + newLine);
+            linesToLog.add(currentLine + " " + originalLine);
             startCounter = 0;
             opCounter = 0;
-        }
-    }
-
-    /**
-     * Checks if a originalLine is an incorrect label or a branch instruction
-     * containing a label with misplaced colon. If it is a branch instruction, it will pass
-     * off to method OpcodeMethodHandler();
-     * @param err reported to if any errors
-     */
-    public void LabelHandler(ErrorHandler err){
-        if(newLine.contains("BEQ") || newLine.contains("BGT") || newLine.contains("BR")){
-            OpcodeHandler(err);
-        }else {
-            err.AddToErrorList(4);
-            err.AddToProblemWordList(newLine);
-            linesToLog.add(currentLine + " " + newLine);
-            err.ErrorsToLog(numberOfErrors);
         }
     }
 
@@ -252,21 +236,38 @@ public class PALParser {
      * If neither, it throws an error.
      */
     public void LabelOrOpcode() {
-        String label;
         ErrorHandler err = new ErrorHandler(linesToLog);
-        if (!newLine.isEmpty() || !newLine.trim().equals("")) {
             newLine = newLine.trim();
-            if (newLine.endsWith(":") && newLine.length() < 15) {
-                label = newLine.replace(":", "");
-                label = label.trim();
-                labelList.add(label);
-                linesToLog.add(currentLine + " " + newLine);
-            } else if ((newLine.contains(":") && !newLine.endsWith(":")) || (newLine.contains(":") && newLine.length() > 15)){
-                LabelHandler(err);
-            } else{
-                OpcodeHandler(err);
-            }
+                if (newLine.contains(":")) {
+                    if(startCounter == 1) {
+                        FindLabelInLine(err);
+                    } else{
+                        err.AssignErrors(13, " ", linesToLog, currentLine, originalLine, numberOfErrors);
+                    }
+                } else {
+                    OpcodeHandler(err, newLine);
+                }
             currentLine++;
+    }
+
+    /**
+     * Finds the label in a .pal line and saves it.
+     * Passes a line containing the opcode statement to
+     * OpcodeHandler();
+     * @param err reported to if any errors
+     */
+    public void FindLabelInLine( ErrorHandler err){
+        String opCode, label;
+        originalLine = newLine;
+        opCode = newLine.substring(newLine.indexOf(":") + 1).trim();
+        label = newLine.replace(opCode, "");
+        label = label.replace(":", "").trim();
+        if(!opCode.isEmpty() || !opCode.equals("")) {
+            labelList.add(label);
+            OpcodeHandler(err, opCode);
+        } else {
+            labelList.add(label);
+            linesToLog.add(currentLine + " " + newLine);
         }
     }
 
