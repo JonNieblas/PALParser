@@ -41,27 +41,6 @@ public class ErrorHandler {
     }
 
     /**
-     * Adds specific error messages based on errors found in
-     * numOfErr to .log file.
-     * @param numOfErr contains errors found in a line
-     */
-    public void ErrorsToLog(ArrayList<Integer> numOfErr){
-        if(errorList.contains(1) && errorList.contains(3)){//don't report if Too Few Operands
-            errorList.remove(Integer.valueOf(1));
-        }
-        for(int i : errorList){
-            if(i == 0 || i == 1 || i == 4 || i == 5 || i == 6 || i == 7 || i == 8 || i == 9 || i == 10 || i == 16) {
-                toLogList.add(Errors(i, problemWordList.get(0)));
-                numOfErr.add(i);
-            }
-            else{
-                toLogList.add(Errors(i, null));
-                numOfErr.add(i);
-            }
-        }
-    }
-
-    /**
      * Points to correct error statement for .log file.
      * @param errNum triggered error number
      * @param word problem word
@@ -90,7 +69,7 @@ public class ErrorHandler {
                     break;
             case 7: error = " ** Wrong Operand Type: Value '" + word + "' where immediate value was expected.";
                     break;
-            case 8: error = " ** Ill-Formed Exit Opcode: '" + word + "' is not a valid opcode to end a program with. Try 'END' instead.";
+            case 8: error = " ** Ill-Formed END Opcode: '" + word + "' is not a valid opcode to end a program with. Try 'END' instead.";
                     break;
             case 9: error = " ** Ill-Formed Start Opcode: '" + word + "' is not a valid opcode to start a program with. Try 'SRT' instead.";
                     break;
@@ -102,9 +81,9 @@ public class ErrorHandler {
                     break;
             case 13: error = " ** Code Outside of Program: All lines of code must be contained between SRT and END opcodes.";
                     break;
-            case 14: error = " ** END Not Detected: All PAL programs must conclude with END opcode.";
+            case 14: error = " ** Program Exit Not Detected: All PAL programs must conclude with END opcode.";
                     break;
-            case 15: error = " ** Invalid DEF: All DEFs must be declared after SRT and before any other executable ops.";
+            case 15: error = " ** Invalid DEF: All DEFs must be declared after SRT and before any other executable opcodes.";
                     break;
             case 16: error = " ** WARNING - Label(s) Not Used: '" + word + "' was/were unused in the program.";
                     break;
@@ -119,18 +98,41 @@ public class ErrorHandler {
      * @param lineCount current line's num in .pal
      * @param linesToLog for lines & errors to be added to
      * @param numOfErr contains each type of error encountered
+     * @param problemWord word to be used in error message
      */
-    public void ENDOrSRT(String line, int n, int lineCount, List<String> linesToLog, ArrayList<Integer> numOfErr){
+    public void IncorrectENDOrSRTHandler(String line, int n, int lineCount, List<String> linesToLog,
+                                         ArrayList<Integer> numOfErr, String problemWord){
         if (n == 0){
-            AddToErrorList(8);
-            AddToProblemWordList(line);
-            linesToLog.add(lineCount + " " + line);
-            ErrorsToLog(numOfErr);
+            ErrorStatementPreparer(8, problemWord, linesToLog, lineCount, line, numOfErr);
         }else if(n == 1){
-            AddToErrorList(9);
-            AddToProblemWordList(line);
-            linesToLog.add(lineCount + " " + line);
-            ErrorsToLog(numOfErr);
+            ErrorStatementPreparer(9, problemWord, linesToLog, lineCount, line, numOfErr);
+        }
+    }
+
+    /**
+     * Checks to see if the incorrect operand is an immediate value or an ill-formed operand.
+     * @param word ill-formed operand/immediate value
+     */
+    public void IncorrectOperandType(String word){
+        word = word.replace(",", "");
+        if(word.matches("^-?\\d+$")){
+            AddToErrorList(0);
+            AddToProblemWordList(word);
+        } else {
+            AddToErrorList(1);
+            AddToProblemWordList(word);
+        }
+    }
+
+    /**
+     * Checks that a string is an immediate value.
+     * @param word string to be checked
+     */
+    public void ShouldBeInteger(String word){
+        word = word.replace(",", "");
+        if(!word.matches("^-?\\d+$")){
+            AddToErrorList(7);
+            AddToProblemWordList(word);
         }
     }
 
@@ -153,7 +155,7 @@ public class ErrorHandler {
             }
             AddToErrorList(errNum);
             AddToProblemWordList(labelsNotFound);
-            ErrorsToLog(numOfErr);
+            ErrorStatementsToLogWriter(numOfErr);
         }
     }
 
@@ -166,12 +168,68 @@ public class ErrorHandler {
      * @param line - no comments; written to log
      * @param numOfErr - stores collective num of errors in .pal
      */
-    public void AssignErrors(int errID, String problemWord, List<String> linesToLog, int lineCount, String line, ArrayList<Integer> numOfErr){
+    public void ErrorStatementPreparer(int errID, String problemWord, List<String> linesToLog, int lineCount, String line, ArrayList<Integer> numOfErr){
         AddToErrorList(errID);
         if (!problemWord.equals(" ")) {
             AddToProblemWordList(problemWord);
         }
-        linesToLog.add(lineCount + " " + line);
-        ErrorsToLog(numOfErr);
+        if(!line.equals(" ")) {
+            linesToLog.add(lineCount + " " + line);
+        }
+        ErrorStatementsToLogWriter(numOfErr);
+    }
+
+    /**
+     * Adds specific error messages based on errors found in
+     * numOfErr to .log file.
+     * @param numOfErr contains errors found in a line
+     */
+    public void ErrorStatementsToLogWriter(ArrayList<Integer> numOfErr){
+        for(int i : errorList){
+            if(i == 0 || i == 1 || i == 4 || i == 5 || i == 6 || i == 7 || i == 8 || i == 9 || i == 10 || i == 16) {
+                toLogList.add(Errors(i, problemWordList.get(0)));
+                numOfErr.add(i);
+            }
+            else{
+                toLogList.add(Errors(i, null));
+                numOfErr.add(i);
+            }
+        }
+    }
+
+    /**
+     * Checks the word count in a line based on opcode type.
+     * Used to report if a statement has too many/too few operands.
+     * @param wordCount num of split words in a line
+     * @param opcode type of opcode
+     */
+    public void WordsInLine(int wordCount, String opcode){
+        switch(opcode){
+            case "ASMD":
+            case "BEBG":
+                WordCountError(3, wordCount);
+                break;
+            case "MC":
+            case "DEF":
+                WordCountError(2, wordCount);
+                break;
+            case "ID":
+            case "BR":
+                WordCountError(1, wordCount);
+                break;
+        }
+    }
+
+    /**
+     * Takes information from WordsInLine() based on which opcode statement
+     * is being tested and reports correct error.
+     * @param i correct num of words in opcode's statement
+     * @param wordCount num of split words from opcode's statement
+     */
+    public void WordCountError(int i, int wordCount){
+        if(wordCount > i){
+            AddToErrorList(2);
+        } else if(wordCount < i){
+            AddToErrorList(3); }
     }
 }

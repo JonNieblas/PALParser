@@ -82,8 +82,7 @@ public class PALParser {
             while ((originalLine = bufferedReader.readLine()) != null) {
                 CommentHandler();
             }
-            //Closes out parsing of file & writes to .log
-            CheckLastLine();
+            LastLineHandler();
             LabelsNotUsed();
             LogSummaryWriter();
             FileWriter();
@@ -103,35 +102,51 @@ public class PALParser {
             comment = originalLine.substring(originalLine.indexOf(";"));
             newLine = originalLine.replace(comment, "");//will remove comment from originalLine
             originalLine = newLine.trim();
-        }else{
+        } else{
             newLine = originalLine.trim();
             originalLine = originalLine.trim();
-        }
-        if(!newLine.isEmpty()){
+        } if(!newLine.isEmpty()){
             lastLine = originalLine.trim();
-            LabelOrOpcode();
+            LabelOrOpcodePasser();
         }
     }
 
     /**
-     * Checks to see that .pal file's last non-comment line is
-     * equal to END opcode.
+     * Checks if the line contains a label, or if it is just an opcode.
      */
-    public void CheckLastLine(){
+    public void LabelOrOpcodePasser() {
         ErrorHandler err = new ErrorHandler(linesToLog);
-        if(lastLine.contains(";")) {
-            comment = lastLine.substring(lastLine.indexOf(";"));
+        newLine = newLine.trim();
+        if (newLine.contains(":")) {
+            if(startCounter == 1) {
+                LabelHandler(err);
+            } else{
+                err.ErrorStatementPreparer(13, " ", linesToLog, currentLine, originalLine, numberOfErrors);
+            }
+        } else {
+            OpcodeHandler(err, newLine);
         }
-        if(lastLine.contains(comment)){
-            lastLine = lastLine.replace(comment, "");
-            lastLine = lastLine.replace(" ", "");
-        }
-        if(lastLine.contains(":")){
-            lastLine = lastLine.substring(lastLine.indexOf(":") + 1).trim();
-        }
-        if(!lastLine.equals(LAST_OPCODE_NAME)){
-            err.AddToErrorList(14);
-            err.ErrorsToLog(numberOfErrors);
+        currentLine++;
+    }
+
+    /**
+     * Finds the label in a .pal line and saves it.
+     * Passes a line containing the opcode statement to
+     * OpcodeHandler();
+     * @param err reported to if any errors
+     */
+    public void LabelHandler(ErrorHandler err){
+        String opCode, label;
+        originalLine = newLine;
+        opCode = newLine.substring(newLine.indexOf(":") + 1).trim();
+        label = newLine.replace(opCode, "");
+        label = label.replace(":", "").trim();
+        if(!opCode.isEmpty() || !opCode.equals("")) {
+            labelList.add(label);
+            OpcodeHandler(err, opCode);
+        } else {
+            labelList.add(label);
+            linesToLog.add(currentLine + " " + newLine);
         }
     }
 
@@ -145,25 +160,23 @@ public class PALParser {
 
         String[] wordSplitter = newLine.split(" ");
         for (String word : wordSplitter) {
-            wordsInLine++;
             firstWord = word;
-            if (wordsInLine == 1) {
+            if (wordsInLine == 0) {
                 if(opList.contains(firstWord) && startCounter == 0){//catches opcode before .pal program begins
-                    err.AssignErrors(13, " ", linesToLog, currentLine, originalLine, numberOfErrors);
+                    err.ErrorStatementPreparer(13, " ", linesToLog, currentLine, originalLine, numberOfErrors);
                     break;
-                }
-                else if(opList.contains(firstWord)){//passes lines with valid opcodes to Class Opcode
+                } else if(opList.contains(firstWord)){//passes lines with valid opcodes to Class Opcode
                     if(opCounter == 0){
                         opCounter++;
                     }
-                    opcode.OpcodeMethodHandler(firstWord, newLine, linesToLog, currentLine, labelList, numberOfErrors, originalLine);
+                    opcode.OpcodeMethodHandler(firstWord, newLine, linesToLog, currentLine, numberOfErrors, originalLine);
                     break;
-                }
-                else{
+                } else{
                     SpecialOpcodeHandler(err, word, newLine);
                     break;
                 }
             }
+            wordsInLine++;
         }
         wordsInLine = 0;
     }
@@ -181,17 +194,17 @@ public class PALParser {
             case FIRST_OPCODE_NAME: SRTHandler(err, newLine);
                 break;
             case "DEF": if(opCounter == 1){
-                              err.AssignErrors(15, " ", linesToLog, currentLine, originalLine, numberOfErrors);
+                err.ErrorStatementPreparer(15, " ", linesToLog, currentLine, originalLine, numberOfErrors);
 
-                        } else{
-                            opcode.OpcodeMethodHandler(firstWord, newLine, linesToLog, currentLine, labelList, numberOfErrors, originalLine);
-                        }
+            } else{
+                opcode.OpcodeMethodHandler(firstWord, newLine, linesToLog, currentLine, numberOfErrors, originalLine);
+            }
                 break;
             default: if(startCounter == 0){
-                            err.AssignErrors(13, " ", linesToLog, currentLine, originalLine, numberOfErrors);
-                     } else {
-                            err.AssignErrors(5, specOp, linesToLog, currentLine, originalLine, numberOfErrors);
-                     }
+                err.ErrorStatementPreparer(13, " ", linesToLog, currentLine, originalLine, numberOfErrors);
+            } else {
+                err.ErrorStatementPreparer(5, specOp, linesToLog, currentLine, originalLine, numberOfErrors);
+            }
                 break;
         }
     }
@@ -201,11 +214,11 @@ public class PALParser {
      * @param err reported to if any errors
      */
     public void SRTHandler(ErrorHandler err, String newLine){
-        String thisLine = newLine.replace(" ", "");
+        String thisLine = newLine.trim();
         if(thisLine.length() > 3){
-            err.ENDOrSRT(originalLine, 1, currentLine, linesToLog, numberOfErrors);
+            err.IncorrectENDOrSRTHandler(originalLine, 1, currentLine, linesToLog, numberOfErrors, thisLine);
         } else if(startCounter == 1){
-            err.AssignErrors(11, " ", linesToLog, currentLine, originalLine, numberOfErrors);
+            err.ErrorStatementPreparer(11, " ", linesToLog, currentLine, originalLine, numberOfErrors);
         } else{
             linesToLog.add(currentLine + " " + originalLine);
             startCounter = 1;
@@ -217,12 +230,11 @@ public class PALParser {
      * @param err reported to if any errors
      */
     public void ENDHandler(ErrorHandler err, String newLine){
-        String thisLine = newLine.replace(" ", "");
+        String thisLine = newLine.trim();
         if(thisLine.length() > 3){
-            err.ENDOrSRT(originalLine, 0, currentLine, linesToLog, numberOfErrors);
+            err.IncorrectENDOrSRTHandler(originalLine, 0, currentLine, linesToLog, numberOfErrors, thisLine);
         } else if(startCounter == 0) {
-            err.AssignErrors(12, " ", linesToLog, currentLine, originalLine, numberOfErrors);
-
+            err.ErrorStatementPreparer(12, " ", linesToLog, currentLine, originalLine, numberOfErrors);
         } else{
             linesToLog.add(currentLine + " " + originalLine);
             startCounter = 0;
@@ -231,43 +243,24 @@ public class PALParser {
     }
 
     /**
-     * Checks that a originalLine is not empty. If it is not, then it checks
-     * to see if the originalLine is a label or opcode and passes accordingly.
-     * If neither, it throws an error.
+     * Checks to see that .pal file's last non-comment line is
+     * equal to END opcode.
      */
-    public void LabelOrOpcode() {
+    public void LastLineHandler(){
         ErrorHandler err = new ErrorHandler(linesToLog);
-            newLine = newLine.trim();
-                if (newLine.contains(":")) {
-                    if(startCounter == 1) {
-                        FindLabelInLine(err);
-                    } else{
-                        err.AssignErrors(13, " ", linesToLog, currentLine, originalLine, numberOfErrors);
-                    }
-                } else {
-                    OpcodeHandler(err, newLine);
-                }
-            currentLine++;
-    }
+        if(lastLine.contains(";")) {
+            comment = lastLine.substring(lastLine.indexOf(";"));
+        }
+        if(lastLine.contains(comment)){
+            lastLine = lastLine.replace(comment, "");
+            lastLine = lastLine.replace(" ", "");
+        }
+        if(lastLine.contains(":")){
+            lastLine = lastLine.substring(lastLine.indexOf(":") + 1).trim();
+        }
+        if(!lastLine.equals(LAST_OPCODE_NAME)){
+            err.ErrorStatementPreparer(14, lastLine, linesToLog, currentLine, " ", numberOfErrors);
 
-    /**
-     * Finds the label in a .pal line and saves it.
-     * Passes a line containing the opcode statement to
-     * OpcodeHandler();
-     * @param err reported to if any errors
-     */
-    public void FindLabelInLine( ErrorHandler err){
-        String opCode, label;
-        originalLine = newLine;
-        opCode = newLine.substring(newLine.indexOf(":") + 1).trim();
-        label = newLine.replace(opCode, "");
-        label = label.replace(":", "").trim();
-        if(!opCode.isEmpty() || !opCode.equals("")) {
-            labelList.add(label);
-            OpcodeHandler(err, opCode);
-        } else {
-            labelList.add(label);
-            linesToLog.add(currentLine + " " + newLine);
         }
     }
 
@@ -402,7 +395,7 @@ public class PALParser {
      */
     public void TotalErrorsToLog(){
         if(err0 > 0){
-            linesToLog.add(" " + err0 + " Wrong Operand Type(s)");
+            linesToLog.add(" " + err0 + " Wrong Operand Type(s) (Registers/Variables)");
         } if(err1 > 0){
             linesToLog.add(" " + err1 + " Ill-Formed Operand(s)");
         } if(err2 > 0){
@@ -416,7 +409,7 @@ public class PALParser {
         } if(err6 > 0){
             linesToLog.add(" " + err6 + " Branches to Non-Existent Label(s)");
         } if(err7 > 0){
-            linesToLog.add(" " + err7 + " Wrong Operand Type(s)");
+            linesToLog.add(" " + err7 + " Wrong Operand Type(s) (Immediate Values)");
         } if(err8 > 0){
             linesToLog.add(" " + err8 + " Ill-Formed Exit Opcode(s)");
         } if(err9 > 0){

@@ -9,6 +9,7 @@ ADD R1, R2, R2          ;code outside of program (1)
 SRT
 DEF newVar, 3209
 DEF newVar2, newVar     ;newVar is not a valid memory space (expects immediate value) (2)
+ADD R1, R22
 ADD R1, R2, R2
 SUB R1, newVar, R3
 
@@ -52,7 +53,10 @@ DEC R1                  ;code outside of program (19)
 
 SRT
 ADD R1, R2, R2
+END here
 Done: END
+how about this?
+
 
 ;;;Total errors expected: 19
 ;;;Should be invalid program

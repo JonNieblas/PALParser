@@ -27,20 +27,18 @@ public class Opcode {
     }
 
     /**
-     * Takes information from Class PALParser and searches for the correct
-     * opcode handler.
+     * Takes a line & the .pal file's information and passes a spaces-removed line
+     * to the correct opcode handler.
      * @param opcode used to find correct opcode method
      * @param line to be checked for syntax errors
      * @param linesToLog for lines & errors to be added to
      * @param lineCount current line's num in .pal
-     * @param labelList containing valid labels
      * @param numOfErr contains each type of error encountered
      */
     public void OpcodeMethodHandler(String opcode, String line, List<String> linesToLog, int lineCount,
-                                    ArrayList<String> labelList, ArrayList<Integer> numOfErr, String ogLine){
+                                    ArrayList<Integer> numOfErr, String ogLine){
         String newLine = line.replace(opcode, "");//removes opcode from statement
         newLine = newLine.replace(" ", "");//removes spaces from statement
-
         switch(opcode){
             case "ADD":
             case "SUB":
@@ -55,9 +53,9 @@ public class Opcode {
             case "DEC": IDOpcode(newLine, linesToLog, lineCount, ogLine, numOfErr);
                 break;
             case "BEQ":
-            case "BGT": BEBGOpcode(newLine, linesToLog, lineCount, labelList, ogLine, numOfErr);
+            case "BGT": BEBGOpcode(newLine, linesToLog, lineCount, ogLine, numOfErr);
                 break;
-            case "BR": BROpcode (newLine, linesToLog, lineCount, labelList, ogLine, numOfErr);
+            case "BR": BROpcode (newLine, linesToLog, lineCount, ogLine, numOfErr);
                 break;
             case "DEF": DEFOpcode(newLine, linesToLog, lineCount, ogLine, numOfErr);
                 break;
@@ -77,14 +75,13 @@ public class Opcode {
         int wordCount = 0;
         ErrorHandler err = new ErrorHandler(linesToLog);
         wordSplitter = newLine.split(",");
-
         for(String word : wordSplitter){
             if(wordCount < 4){
-                RegisterChecker(err, word);
+                IsValidRegister(err, word);
             }
             wordCount++;
         }
-        LogListAdder(err, linesToLog, wordCount, lineCount, "ASMD", originalLine, numOfErr);
+        LogListWriter(err, linesToLog, wordCount, lineCount, "ASMD", originalLine, numOfErr);
     }
 
     /**
@@ -100,10 +97,10 @@ public class Opcode {
         ErrorHandler err = new ErrorHandler(linesToLog);
         wordSplitter = newLine.split(",");
         for(String word : wordSplitter){
-            RegisterChecker(err, word);
+            IsValidRegister(err, word);
             wordCount++;
         }
-        LogListAdder(err, linesToLog, wordCount, lineCount, "MC", originalLine, numOfErr);
+        LogListWriter(err, linesToLog, wordCount, lineCount, "MC", originalLine, numOfErr);
     }
 
     /**
@@ -120,13 +117,13 @@ public class Opcode {
         wordSplitter = newLine.split(",");
         for(String word : wordSplitter){
             if(wordCount == 0){
-                ShouldBeInteger(err, word);
+                err.ShouldBeInteger(word);
             } else if(wordCount > 0){
-                RegisterChecker(err, word);
+                IsValidRegister(err, word);
             }
             wordCount++;
         }
-        LogListAdder(err, linesToLog, wordCount, lineCount, "MC", originalLine, numOfErr);
+        LogListWriter(err, linesToLog, wordCount, lineCount, "MC", originalLine, numOfErr);
     }
 
     /**
@@ -142,10 +139,10 @@ public class Opcode {
         ErrorHandler err = new ErrorHandler(linesToLog);
         wordSplitter = newLine.split(",");
         for(String word : wordSplitter){
-            RegisterChecker(err, word);
+            IsValidRegister(err, word);
             wordCount++;
         }
-        LogListAdder(err, linesToLog, wordCount, lineCount, "ID", originalLine, numOfErr);
+        LogListWriter(err, linesToLog, wordCount, lineCount, "ID", originalLine, numOfErr);
     }
 
     /**
@@ -153,25 +150,24 @@ public class Opcode {
      * @param newLine receives syntax check
      * @param linesToLog for lines & errors to be added to
      * @param lineCount current line's num in .pal
-     * @param labelList contains pre-created labels
      * @param originalLine contains comments, spaces, & opcode
      * @param numOfErr contains each type of error encountered
      */
-    public void BEBGOpcode(String newLine, List<String> linesToLog, int lineCount, ArrayList<String> labelList,
-                           String originalLine, ArrayList<Integer> numOfErr){
+    public void BEBGOpcode(String newLine, List<String> linesToLog, int lineCount, String originalLine,
+                           ArrayList<Integer> numOfErr){
         int wordCount = 0;
         String label = LabelFinder(originalLine).trim();
         ErrorHandler err = new ErrorHandler(linesToLog);
         wordSplitter = newLine.split(",");
         for(String word : wordSplitter){
             if(wordCount < 2){
-                RegisterChecker(err, word);
+                IsValidRegister(err, word);
             }else if (wordCount == 2) {
-                LabelChecker(err, label, labelList);
+                IsValidLabel(err, label);
             }
             wordCount++;
         }
-        LogListAdder(err, linesToLog, wordCount, lineCount, "BEBG", originalLine, numOfErr);
+        LogListWriter(err, linesToLog, wordCount, lineCount, "BEBG", originalLine, numOfErr);
     }
 
     /**
@@ -179,23 +175,22 @@ public class Opcode {
      * @param newLine receives syntax check
      * @param linesToLog for lines & errors to be added to
      * @param lineCount current line's num in .pal
-     * @param labelList contains pre-created labels
      * @param originalLine contains comments, spaces, & opcode
      * @param numOfErr contains each type of error encountered
      */
-    public void BROpcode(String newLine, List<String> linesToLog, int lineCount, ArrayList<String> labelList,
-                         String originalLine, ArrayList<Integer> numOfErr){
+    public void BROpcode(String newLine, List<String> linesToLog, int lineCount, String originalLine,
+                         ArrayList<Integer> numOfErr){
         int wordCount = 0;
         String label = LabelFinder(originalLine).trim();
         ErrorHandler err = new ErrorHandler(linesToLog);
         wordSplitter = newLine.split(",");
         for(String word : wordSplitter){
             if(wordCount == 0){
-                LabelChecker(err, label, labelList);
+                IsValidLabel(err, label);
             }
             wordCount++;
         }
-        LogListAdder(err, linesToLog, wordCount, lineCount, "BR", originalLine, numOfErr);
+        LogListWriter(err, linesToLog, wordCount, lineCount, "BR", originalLine, numOfErr);
     }
 
     /**
@@ -214,11 +209,11 @@ public class Opcode {
             if(wordCount == 0){
                 validVariables.add(word);
             }if(wordCount == 1){
-                ShouldBeInteger(err, word);
+                err.ShouldBeInteger(word);
             }
             wordCount++;
         }
-        LogListAdder(err, linesToLog, wordCount, lineCount, "DEF", originalLine, numOfErr);
+        LogListWriter(err, linesToLog, wordCount, lineCount, "DEF", originalLine, numOfErr);
     }
 
     /**
@@ -238,6 +233,31 @@ public class Opcode {
     }
 
     /**
+     * Checks that a branch references an existing label or a valid label.
+     * @param err reported to if any errors
+     * @param label from branch instruction
+     */
+    public void IsValidLabel(ErrorHandler err, String label){
+        if(validRegisters.contains(label) || validVariables.contains(label)){
+            err.AddToErrorList(10);
+            err.AddToProblemWordList(label);
+        } else{
+            encounteredLabels.add(label);
+        }
+    }
+
+    /**
+     * Checks that registers being used in Source/Destination sports are valid
+     * @param err reported to if any errors
+     * @param word valid/invalid register
+     */
+    public void IsValidRegister(ErrorHandler err, String word){
+        if(!validRegisters.contains(word) && !validVariables.contains(word)){
+            err.IncorrectOperandType(word);
+        }
+    }
+
+    /**
      * Takes info from an opcode handler, passes information to
      * WordsInLine(), then adds line + errors to .log file.
      * @param err reported to if any errors
@@ -248,113 +268,17 @@ public class Opcode {
      * @param line original line
      * @param numOfErr contains each type of error encountered
      */
-    public void LogListAdder(ErrorHandler err, List<String> linesToLog, int wordCount, int lineCount,
-                             String opcode, String line, ArrayList<Integer> numOfErr){
-        WordsInLine(err, wordCount, opcode);
+    public void LogListWriter(ErrorHandler err, List<String> linesToLog, int wordCount, int lineCount,
+                              String opcode, String line, ArrayList<Integer> numOfErr){
+        err.WordsInLine(wordCount, opcode);
         linesToLog.add(lineCount + " " + line);
-        err.ErrorsToLog(numOfErr);
+        err.ErrorStatementsToLogWriter(numOfErr);
     }
 
     /**
-     * Checks that registers being used in Source/Destination sports are valid
-     * @param err reported to if any errors
-     * @param word valid/invalid register
+     * Returns the arrayList containing branch labels, encounteredLabels.
+     * @return encounteredLabels
      */
-    public void RegisterChecker(ErrorHandler err, String word){
-        if(!validRegisters.contains(word) && !validVariables.contains(word)){
-            OperandStringOrInteger(err, word);
-        }
-    }
-
-    /**
-     * Checks that a branch references an existing label or a valid label.
-     * @param err reported to if any errors
-     * @param label from branch instruction
-     * @param labelList contains pre-created labels
-     */
-    public void LabelChecker(ErrorHandler err, String label, ArrayList<String> labelList){
-        if(validRegisters.contains(label) || validVariables.contains(label)){
-            err.AddToErrorList(10);
-            err.AddToProblemWordList(label);
-        }
-//        else if(labelList.contains(label)){
-//            encounteredLabels.add(label);
-//        } else{
-//            err.AddToErrorList(6);
-//            err.AddToProblemWordList(label);
-//        }
-        else{
-            encounteredLabels.add(label);
-        }
-    }
-
-    /**
-     * Checks to see if the incorrect operand is an immediate value or an ill-formed operand.
-     * @param err reported to if any errors
-     * @param word ill-formed operand/immediate value
-     */
-    public void OperandStringOrInteger(ErrorHandler err, String word){
-        word = word.replace(",", "");
-        if(word.matches("^-?\\d+$")){
-            err.AddToErrorList(0);
-            err.AddToProblemWordList(word);
-        } else {
-            err.AddToErrorList(1);
-            err.AddToProblemWordList(word);
-        }
-    }
-
-    /**
-     * Checks that a string is an immediate value.
-     * @param err reported to if any errors
-     * @param word string to be checked
-     */
-    public void ShouldBeInteger(ErrorHandler err, String word){
-        word = word.replace(",", "");
-        if(!word.matches("^-?\\d+$")){
-            err.AddToErrorList(7);
-            err.AddToProblemWordList(word);
-        }
-    }
-
-    /**
-     * Checks the word count in a line based on opcode type.
-     * Used to report if a statement has too many/too few operands.
-     * @param err reported to if any errors
-     * @param wordCount num of split words in a line
-     * @param opcode type of opcode
-     */
-    public void WordsInLine(ErrorHandler err, int wordCount, String opcode){
-        switch(opcode){
-            case "ASMD":
-            case "BEBG":
-                WordCountError(3, wordCount, err);
-                break;
-            case "MC":
-            case "DEF":
-                WordCountError(2, wordCount, err);
-                break;
-            case "ID":
-            case "BR":
-                WordCountError(1, wordCount, err);
-                break;
-        }
-    }
-
-    /**
-     * Takes information from WordsInLine() based on which opcode statement
-     * is being tested and reports correct error.
-     * @param i correct num of words in opcode's statement
-     * @param wordCount num of split words from opcode's statement
-     * @param err reported to if any errors
-     */
-    public void WordCountError(int i, int wordCount, ErrorHandler err){
-        if(wordCount > i){
-            err.AddToErrorList(2);
-        } else if(wordCount < i){
-            err.AddToErrorList(3); }
-    }
-
     public ArrayList<String> getEncounteredLabels(){
         return this.encounteredLabels;
     }
