@@ -74,9 +74,11 @@ public class LogWriter {
     /**
      * Takes an ArrayList containing all lines, errors & comments,
      * then writes it to a .log file named after the original .pal
-     * file name.
+     * file name. Log files stored in logs/.
      */
     public void FileWriter(String fileNameAppended, List<String> linesToLog){
+        File logDir = new File("logs");
+        logDir.mkdir();
         Path logFile = Paths.get("logs/" + fileNameAppended + ".log");//used for writing to .log file
         try {
             Files.write(logFile, linesToLog, Charset.forName("UTF-8"));
