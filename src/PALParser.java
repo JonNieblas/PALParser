@@ -50,6 +50,7 @@ public class PALParser {
     private List<String> linesToLog = new ArrayList<>();//lines to be printed
     /** Contains each error in .pal file to be added up at the end. */
     private ArrayList<Integer> numberOfErrors = new ArrayList<>();
+    private ArrayList<Integer> linesOutsideOfProgram = new ArrayList<>();
 
     /** Counters for num of each error in .pal file.*/
     private int err0 = 0, err1 = 0, err2 = 0, err3 = 0, err4 = 0, err5 = 0, err6 = 0, err7 = 0,
@@ -85,7 +86,7 @@ public class PALParser {
             LabelsNotUsed();
             writer.setErrorNumbers(err0, err1, err2, err3, err4, err5, err6, err7, err8, err9, err10, err11,
                     err12, err13, err14, err15, err16);
-            writer.LogSummaryWriter(linesToLog, numberOfErrors);
+            writer.LogSummaryWriter(linesToLog, numberOfErrors, linesOutsideOfProgram);
             writer.FileWriter(fileNameAppended, linesToLog);
             bufferedReader.close();
         } catch (FileNotFoundException ex) {
@@ -122,7 +123,8 @@ public class PALParser {
             if(startCounter == 1) {
                 LabelHandler(err);
             } else{
-                err.ErrorStatementPreparer(13, " ", linesToLog, currentLine, originalLine, numberOfErrors);
+                err.ErrorStatementPreparer(13, " ", linesToLog, currentLine, originalLine, numberOfErrors,
+                                            linesOutsideOfProgram);
             }
         } else {
             OpcodeHandler(err, newLine);
@@ -164,7 +166,8 @@ public class PALParser {
             firstWord = word;
             if (wordsInLine == 0) {
                 if(opList.contains(firstWord) && startCounter == 0){//catches opcode before .pal program begins
-                    err.ErrorStatementPreparer(13, " ", linesToLog, currentLine, originalLine, numberOfErrors);
+                    err.ErrorStatementPreparer(13, " ", linesToLog, currentLine, originalLine, numberOfErrors,
+                                                linesOutsideOfProgram);
                     break;
                 } else if(opList.contains(firstWord)){//passes lines with valid opcodes to Class Opcode
                     if(opCounter == 0){
@@ -195,16 +198,17 @@ public class PALParser {
             case FIRST_OPCODE_NAME: SRTHandler(err, newLine);
                 break;
             case "DEF": if(opCounter == 1){
-                err.ErrorStatementPreparer(15, " ", linesToLog, currentLine, originalLine, numberOfErrors);
+                err.ErrorStatementPreparer(15, " ", linesToLog, currentLine, originalLine, numberOfErrors, null);
 
             } else{
                 opcode.OpcodeMethodHandler(firstWord, newLine, linesToLog, currentLine, numberOfErrors, originalLine);
             }
                 break;
             default: if(startCounter == 0){
-                err.ErrorStatementPreparer(13, " ", linesToLog, currentLine, originalLine, numberOfErrors);
+                err.ErrorStatementPreparer(13, " ", linesToLog, currentLine, originalLine, numberOfErrors,
+                                            linesOutsideOfProgram);
             } else {
-                err.ErrorStatementPreparer(5, specOp, linesToLog, currentLine, originalLine, numberOfErrors);
+                err.ErrorStatementPreparer(5, specOp, linesToLog, currentLine, originalLine, numberOfErrors, null);
             }
                 break;
         }
@@ -219,7 +223,7 @@ public class PALParser {
         if(thisLine.length() > 3){
             err.IncorrectENDOrSRTHandler(originalLine, 1, currentLine, linesToLog, numberOfErrors, thisLine);
         } else if(startCounter == 1){
-            err.ErrorStatementPreparer(11, " ", linesToLog, currentLine, originalLine, numberOfErrors);
+            err.ErrorStatementPreparer(11, " ", linesToLog, currentLine, originalLine, numberOfErrors, null);
         } else{
             linesToLog.add(currentLine + " " + originalLine);
             startCounter = 1;
@@ -235,7 +239,7 @@ public class PALParser {
         if(thisLine.length() > 3){
             err.IncorrectENDOrSRTHandler(originalLine, 0, currentLine, linesToLog, numberOfErrors, thisLine);
         } else if(startCounter == 0) {
-            err.ErrorStatementPreparer(12, " ", linesToLog, currentLine, originalLine, numberOfErrors);
+            err.ErrorStatementPreparer(12, " ", linesToLog, currentLine, originalLine, numberOfErrors, null);
         } else{
             linesToLog.add(currentLine + " " + originalLine);
             startCounter = 0;
@@ -260,7 +264,7 @@ public class PALParser {
             lastLine = lastLine.substring(lastLine.indexOf(":") + 1).trim();
         }
         if(!lastLine.equals(LAST_OPCODE_NAME)){
-            err.ErrorStatementPreparer(14, lastLine, linesToLog, currentLine, " ", numberOfErrors);
+            err.ErrorStatementPreparer(14, lastLine, linesToLog, currentLine, " ", numberOfErrors, null);
 
         }
     }

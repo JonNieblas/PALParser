@@ -103,9 +103,9 @@ public class ErrorHandler {
     public void IncorrectENDOrSRTHandler(String line, int n, int lineCount, List<String> linesToLog,
                                          ArrayList<Integer> numOfErr, String problemWord){
         if (n == 0){
-            ErrorStatementPreparer(8, problemWord, linesToLog, lineCount, line, numOfErr);
+            ErrorStatementPreparer(8, problemWord, linesToLog, lineCount, line, numOfErr, null);
         }else if(n == 1){
-            ErrorStatementPreparer(9, problemWord, linesToLog, lineCount, line, numOfErr);
+            ErrorStatementPreparer(9, problemWord, linesToLog, lineCount, line, numOfErr, null);
         }
     }
 
@@ -160,6 +160,18 @@ public class ErrorHandler {
     }
 
     /**
+     *
+     * @param outsideOfProg
+     */
+    public void LinesOutsideOfProgramWriter(ArrayList<Integer> outsideOfProg){
+        String outsideLineNums = " ";
+        for(int i : outsideOfProg){
+            outsideLineNums = i + ",";
+        }
+        toLogList.add(Errors(13, outsideLineNums));
+    }
+
+    /**
      * Takes an error and writes message to log.
      * @param errID - specific error number
      * @param problemWord - word that caused error
@@ -168,15 +180,19 @@ public class ErrorHandler {
      * @param line - no comments; written to log
      * @param numOfErr - stores collective num of errors in .pal
      */
-    public void ErrorStatementPreparer(int errID, String problemWord, List<String> linesToLog, int lineCount, String line, ArrayList<Integer> numOfErr){
+    public void ErrorStatementPreparer(int errID, String problemWord, List<String> linesToLog, int lineCount, String line,
+                                       ArrayList<Integer> numOfErr, ArrayList<Integer> outsideOfProgram){
         AddToErrorList(errID);
         if (!problemWord.equals(" ")) {
             AddToProblemWordList(problemWord);
-        }
-        if(!line.equals(" ")) {
+        } if(!line.equals(" ")) {
             linesToLog.add(lineCount + " " + line);
+        } if(outsideOfProgram == null) {
+            ErrorStatementsToLogWriter(numOfErr);
+        } else{
+            outsideOfProgram.add(lineCount);
+            numOfErr.add(13);
         }
-        ErrorStatementsToLogWriter(numOfErr);
     }
 
     /**
@@ -186,11 +202,10 @@ public class ErrorHandler {
      */
     public void ErrorStatementsToLogWriter(ArrayList<Integer> numOfErr){
         for(int i : errorList){
-            if(i == 0 || i == 1 || i == 4 || i == 5 || i == 6 || i == 7 || i == 8 || i == 9 || i == 10 || i == 16) {
+            if(i == 0 || i == 1 || i == 4 || i == 5 || i == 6 || i == 7 || i == 8 || i == 9 || i == 10 || i == 13 || i == 16) {
                 toLogList.add(Errors(i, problemWordList.get(0)));
                 numOfErr.add(i);
-            }
-            else{
+            } else{
                 toLogList.add(Errors(i, null));
                 numOfErr.add(i);
             }

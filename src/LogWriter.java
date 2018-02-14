@@ -56,12 +56,16 @@ public class LogWriter {
      * Adds a summary to the .log file after a .pal program
      * has been parsed.
      */
-    public void LogSummaryWriter(List<String> linesToLog, ArrayList<Integer> numberOfErrors){
+    public void LogSummaryWriter(List<String> linesToLog, ArrayList<Integer> numberOfErrors, ArrayList<Integer> outsideOfProg){
+        ErrorHandler err = new ErrorHandler(linesToLog);
 
         int totalErrors = CountTotalErrors(numberOfErrors);
         linesToLog.add(" ");
         linesToLog.add("Summary ----------");
         linesToLog.add(" ");
+        if(!outsideOfProg.isEmpty()){
+            err.LinesOutsideOfProgramWriter(outsideOfProg);
+        }
         linesToLog.add("total Errors = " + totalErrors);
         TotalErrorsToLog(linesToLog);
         if(totalErrors > 0){
