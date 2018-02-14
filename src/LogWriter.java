@@ -32,6 +32,8 @@ public class LogWriter {
 
     /**
      * Adds correct header information to ArrayList linesToLog.
+     * @param fileNameAppended name of file
+     * @param linesToLog lines to be written to .log
      */
     public void LogHeaderWriter(String fileNameAppended, List<String> linesToLog){
         Date date = new Date();
@@ -55,16 +57,25 @@ public class LogWriter {
     /**
      * Adds a summary to the .log file after a .pal program
      * has been parsed.
+     * @param linesToLog lines to be written to .log
+     * @param numberOfErrors contains frequency of each error
+     * @param outsideOfProg line number outside of SRT--END
+     * @param opcode opcode obj used for grabbing encountered labels
+     * @param labelList list of valid labels
      */
-    public void LogSummaryWriter(List<String> linesToLog, ArrayList<Integer> numberOfErrors, ArrayList<Integer> outsideOfProg){
+    public void LogSummaryWriter(List<String> linesToLog, ArrayList<Integer> numberOfErrors, ArrayList<Integer> outsideOfProg,
+                                 Opcode opcode, ArrayList<String> labelList){
         ErrorHandler err = new ErrorHandler(linesToLog);
-
         int totalErrors = CountTotalErrors(numberOfErrors);
+
         linesToLog.add(" ");
         linesToLog.add("Summary ----------");
         linesToLog.add(" ");
+        err.LabelsNotUsed(linesToLog, opcode, labelList, numberOfErrors);
+        linesToLog.add(" ");
         if(!outsideOfProg.isEmpty()){
-            err.LinesOutsideOfProgramWriter(outsideOfProg);
+            err13 = err.LinesOutsideOfProgramCalculator(outsideOfProg);
+            linesToLog.add(" ");
         }
         linesToLog.add("total Errors = " + totalErrors);
         TotalErrorsToLog(linesToLog);
@@ -79,6 +90,8 @@ public class LogWriter {
      * Takes an ArrayList containing all lines, errors & comments,
      * then writes it to a .log file named after the original .pal
      * file name. Log files stored in logs/.
+     * @param fileNameAppended name of file
+     * @param linesToLog lines to be written to .log
      */
     public void FileWriter(String fileNameAppended, List<String> linesToLog){
         File logDir = new File("logs");
@@ -95,6 +108,7 @@ public class LogWriter {
     /**
      * Counts the number of each type of error in the .pal file.
      * Also, adds up the total number of errors.
+     * @param numberOfErrors contains frequency of each error type
      * @return total num of errors in .pal file
      */
     public int CountTotalErrors(ArrayList<Integer> numberOfErrors){
@@ -144,6 +158,7 @@ public class LogWriter {
     /**
      * Prints total number of each type of error to summary
      * if any errors are present at all.
+     * @param linesToLog lines to be written to .log
      */
     public void TotalErrorsToLog(List<String> linesToLog){
         if(err0 > 0){

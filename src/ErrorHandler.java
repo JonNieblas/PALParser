@@ -1,5 +1,7 @@
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * Class ErrorHandler takes different error numbers and adds
@@ -65,7 +67,7 @@ public class ErrorHandler {
             case 5: error = " ** Invalid Opcode: '" + word + "' is not a valid opcode. Please review valid opcodes "
                             + "for more details.";
                     break;
-            case 6: error = " ** WARNING - Branches to Non-Existent Label: '" + word + "' doesn't exist in the program.";
+            case 6: error = " ** WARNING - Branches to Non-Existent Label: Labels '" + word + "' doesn't exist in the program.";
                     break;
             case 7: error = " ** Wrong Operand Type: Value '" + word + "' where immediate value was expected.";
                     break;
@@ -79,7 +81,7 @@ public class ErrorHandler {
                     break;
             case 12: error = " ** Misplaced END: SRT hasn't be instantiated yet.";
                     break;
-            case 13: error = " ** Code Outside of Program: All lines of code must be contained between SRT and END opcodes.";
+            case 13: error = " ** WARNING - Line(s) Found Outside of Program: \n " + word;
                     break;
             case 14: error = " ** Program Exit Not Detected: All PAL programs must conclude with END opcode.";
                     break;
@@ -160,15 +162,49 @@ public class ErrorHandler {
     }
 
     /**
-     *
-     * @param outsideOfProg
+     * Takes two lists, one containing valid labels from the program, another containing labels
+     * that were found in branch instructions, and prepares them to be passed to the LabelErrorHandler
+     * in Class ErrorHandler. This checks to see if there are any unused labels or any labels that don't
+     * exist but were used in branch instructions.
      */
-    public void LinesOutsideOfProgramWriter(ArrayList<Integer> outsideOfProg){
-        String outsideLineNums = " ";
-        for(int i : outsideOfProg){
-            outsideLineNums = i + ",";
+    public void LabelsNotUsed(List<String> linesToLog, Opcode opcode, ArrayList<String> labelList,
+                              ArrayList<Integer> numberOfErrors){
+        ErrorHandler err = new ErrorHandler(linesToLog);
+        ErrorHandler err1 = new ErrorHandler(linesToLog);
+        ArrayList<String> encounteredLabels = opcode.getEncounteredLabels();
+        ArrayList<String> labelsFound = new ArrayList<>();
+
+        labelsFound.addAll(encounteredLabels);
+        encounteredLabels.removeAll(labelList);//labels that don't exist
+        labelList.removeAll(labelsFound);//labels we didn't use
+
+        err.LabelErrorHandler(labelList, numberOfErrors, 16);//check for any unused labels
+        linesToLog.add(" ");
+        err1.LabelErrorHandler(encounteredLabels, numberOfErrors, 6);//check for any non-existent labels
+    }
+
+    /**
+     * Writes an error statement to .log containing all lines caught outside of SRT--END.
+     * Statement is written to the summary of the .log file.
+     * @param outsideOfProg numbers of lines outside of SRT--END
+     * @return totalOutsideErrors -actual frequency of error 13
+     */
+    public int LinesOutsideOfProgramCalculator(ArrayList<Integer> outsideOfProg){
+        String outsideLineNums = "";
+        Set<Integer> lineNumbers = new LinkedHashSet<>(outsideOfProg);
+        int totalOutsideErrors = outsideOfProg.size() - lineNumbers.size();
+        totalOutsideErrors = outsideOfProg.size() - totalOutsideErrors;
+        int firstNum = 0;
+        for(int i : lineNumbers){
+            if(firstNum == 0) {
+                outsideLineNums = outsideLineNums + i;
+            } else{
+                outsideLineNums = outsideLineNums + ", " + i;
+            }
+            firstNum++;
         }
         toLogList.add(Errors(13, outsideLineNums));
+        return totalOutsideErrors;
     }
 
     /**
@@ -185,7 +221,7 @@ public class ErrorHandler {
         AddToErrorList(errID);
         if (!problemWord.equals(" ")) {
             AddToProblemWordList(problemWord);
-        } if(!line.equals(" ")) {
+        } if(!line.equals(" ") && errID != 13) {
             linesToLog.add(lineCount + " " + line);
         } if(outsideOfProgram == null) {
             ErrorStatementsToLogWriter(numOfErr);
@@ -202,12 +238,20 @@ public class ErrorHandler {
      */
     public void ErrorStatementsToLogWriter(ArrayList<Integer> numOfErr){
         for(int i : errorList){
-            if(i == 0 || i == 1 || i == 4 || i == 5 || i == 6 || i == 7 || i == 8 || i == 9 || i == 10 || i == 13 || i == 16) {
+            if(i == 0 || i == 4 || i == 5 || i == 6 || i == 7 || i == 8 || i == 9 || i == 10 || i == 13 || i == 16) {
                 toLogList.add(Errors(i, problemWordList.get(0)));
                 numOfErr.add(i);
             } else{
-                toLogList.add(Errors(i, null));
-                numOfErr.add(i);
+                if(i != 1) {
+                    toLogList.add(Errors(i, null));
+                    numOfErr.add(i);
+                }
+            }
+        }
+        if(errorList.contains(1)) {
+            for (String word : problemWordList) {
+                toLogList.add(Errors(1, word));
+                numOfErr.add(1);
             }
         }
     }

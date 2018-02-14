@@ -83,10 +83,9 @@ public class PALParser {
                 CommentHandler();
             }
             LastLineHandler();
-            LabelsNotUsed();
             writer.setErrorNumbers(err0, err1, err2, err3, err4, err5, err6, err7, err8, err9, err10, err11,
                     err12, err13, err14, err15, err16);
-            writer.LogSummaryWriter(linesToLog, numberOfErrors, linesOutsideOfProgram);
+            writer.LogSummaryWriter(linesToLog, numberOfErrors, linesOutsideOfProgram, opcode, labelList);
             writer.FileWriter(fileNameAppended, linesToLog);
             bufferedReader.close();
         } catch (FileNotFoundException ex) {
@@ -125,6 +124,7 @@ public class PALParser {
             } else{
                 err.ErrorStatementPreparer(13, " ", linesToLog, currentLine, originalLine, numberOfErrors,
                                             linesOutsideOfProgram);
+                LabelHandler(err);
             }
         } else {
             OpcodeHandler(err, newLine);
@@ -168,6 +168,7 @@ public class PALParser {
                 if(opList.contains(firstWord) && startCounter == 0){//catches opcode before .pal program begins
                     err.ErrorStatementPreparer(13, " ", linesToLog, currentLine, originalLine, numberOfErrors,
                                                 linesOutsideOfProgram);
+                    opcode.OpcodeMethodHandler(firstWord, newLine, linesToLog, currentLine, numberOfErrors, originalLine);
                     break;
                 } else if(opList.contains(firstWord)){//passes lines with valid opcodes to Class Opcode
                     if(opCounter == 0){
@@ -204,12 +205,12 @@ public class PALParser {
                 opcode.OpcodeMethodHandler(firstWord, newLine, linesToLog, currentLine, numberOfErrors, originalLine);
             }
                 break;
-            default: if(startCounter == 0){
-                err.ErrorStatementPreparer(13, " ", linesToLog, currentLine, originalLine, numberOfErrors,
-                                            linesOutsideOfProgram);
-            } else {
+            default:
+                if(startCounter == 0){
+                    numberOfErrors.add(13);
+                    linesOutsideOfProgram.add(currentLine);
+                }
                 err.ErrorStatementPreparer(5, specOp, linesToLog, currentLine, originalLine, numberOfErrors, null);
-            }
                 break;
         }
     }
@@ -224,6 +225,8 @@ public class PALParser {
             err.IncorrectENDOrSRTHandler(originalLine, 1, currentLine, linesToLog, numberOfErrors, thisLine);
         } else if(startCounter == 1){
             err.ErrorStatementPreparer(11, " ", linesToLog, currentLine, originalLine, numberOfErrors, null);
+            numberOfErrors.add(13);
+            linesOutsideOfProgram.add(currentLine);
         } else{
             linesToLog.add(currentLine + " " + originalLine);
             startCounter = 1;
@@ -240,6 +243,8 @@ public class PALParser {
             err.IncorrectENDOrSRTHandler(originalLine, 0, currentLine, linesToLog, numberOfErrors, thisLine);
         } else if(startCounter == 0) {
             err.ErrorStatementPreparer(12, " ", linesToLog, currentLine, originalLine, numberOfErrors, null);
+            numberOfErrors.add(13);
+            linesOutsideOfProgram.add(currentLine);
         } else{
             linesToLog.add(currentLine + " " + originalLine);
             startCounter = 0;
@@ -267,26 +272,6 @@ public class PALParser {
             err.ErrorStatementPreparer(14, lastLine, linesToLog, currentLine, " ", numberOfErrors, null);
 
         }
-    }
-
-    /**
-     * Takes two lists, one containing valid labels from the program, another containing labels
-     * that were found in branch instructions, and prepares them to be passed to the LabelErrorHandler
-     * in Class ErrorHandler. This checks to see if there are any unused labels or any labels that don't
-     * exist but were used in branch instructions.
-     */
-    public void LabelsNotUsed(){
-        ErrorHandler err = new ErrorHandler(linesToLog);
-        ErrorHandler err1 = new ErrorHandler(linesToLog);
-        ArrayList<String> encounteredLabels = opcode.getEncounteredLabels();
-        ArrayList<String> labelsFound = new ArrayList<>();
-
-        labelsFound.addAll(encounteredLabels);
-        encounteredLabels.removeAll(labelList);//labels that don't exist
-        labelList.removeAll(labelsFound);//labels we didn't use
-
-        err.LabelErrorHandler(labelList, numberOfErrors, 16);//check for any unused labels
-        err1.LabelErrorHandler(encounteredLabels, numberOfErrors, 6);//check for any non-existent labels
     }
 
     /**
