@@ -23,5 +23,6 @@ public class PALDriver {
         parser3.Parser();
         parser4.Parser();
         parser5.Parser();
+        System.out.println("\nProcessing Complete! Please look for log files in /logs directory.");
     }
 }

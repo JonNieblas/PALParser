@@ -1,18 +1,23 @@
-SRT
-MOVE 1, R1
-MOVE 100, R2
-COPY R1, R3
+;;;Program containing no issues.
+;;;Tests to make sure that a good program can pass.
+;;;Simple increment/decrement to 100 and back.
+;;;@author Jonathan Nieblas
+
+
+    SRT
+    MOVE 1, R1
+    MOVE 100, R2
+    COPY R1, R3
 
 while:
-INC R1
-BEQ R1, R3, next
-BR while
+    INC R1
+    BEQ R1, R3, next
+    BR while
 
 next:
 for:
-DEC R1
-BEQ R1, R3, exit
-BR for
+    DEC R1
+    BEQ R1, R3, exit
+    BR for
 
-exit:
-END
+exit: END

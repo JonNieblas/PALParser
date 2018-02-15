@@ -63,15 +63,16 @@ public class LogWriter {
      * @param labelList list of valid labels
      */
     public void LogSummaryWriter(List<String> linesToLog, ArrayList<Integer> numberOfErrors, ArrayList<Integer> outsideOfProg,
-                                 Opcode opcode, ArrayList<String> labelList){
+                                 Opcode opcode, List<String> labelList){
         ErrorHandler err = new ErrorHandler(linesToLog);
-        int totalErrors = CountTotalErrors(numberOfErrors);
+        ErrorHandler err1 = new ErrorHandler(linesToLog);
 
         linesToLog.add(" ");
         linesToLog.add("Summary ----------");
         linesToLog.add(" ");
-        err.LabelsNotUsed(linesToLog, opcode, labelList, numberOfErrors);
-        linesToLog.add(" ");
+        err6 = err.LabelErrorPasser(labelList, numberOfErrors, opcode, err6, 6);
+        err16 = err1.LabelErrorPasser(labelList, numberOfErrors, opcode, err16, 16);
+        int totalErrors = CountTotalErrors(numberOfErrors);
         if(!outsideOfProg.isEmpty()){
             err13 = err.LinesOutsideOfProgramCalculator(outsideOfProg);
             linesToLog.add(" ");
@@ -193,7 +194,7 @@ public class LogWriter {
         } if(err15 > 0){
             linesToLog.add(" " + err15 + " Invalid DEF(s)");
         } if(err16 > 0){
-            linesToLog.add(" " + err16 + " Label(s) Not Used Warning");
+            linesToLog.add(" " + err16 + " Label(s) Not Used");
         }
     }
 }

@@ -50,6 +50,7 @@ public class PALParser {
     private List<String> linesToLog = new ArrayList<>();//lines to be printed
     /** Contains each error in .pal file to be added up at the end. */
     private ArrayList<Integer> numberOfErrors = new ArrayList<>();
+    /** Contains the number of each line caught outside of SRT--END. */
     private ArrayList<Integer> linesOutsideOfProgram = new ArrayList<>();
 
     /** Counters for num of each error in .pal file.*/
@@ -101,12 +102,12 @@ public class PALParser {
     public void CommentHandler(){
         if(originalLine.contains(";")) {//check for comments
             comment = originalLine.substring(originalLine.indexOf(";"));
-            newLine = originalLine.replace(comment, "");//will remove comment from originalLine
+            newLine = originalLine.replace(comment, "").trim();//will remove comment from originalLine
             originalLine = newLine.trim();
         } else{
             newLine = originalLine.trim();
             originalLine = originalLine.trim();
-        } if(!newLine.isEmpty()){
+        } if(!newLine.isEmpty() || !newLine.equals("")){
             lastLine = originalLine.trim();
             LabelOrOpcodePasser();
         }
@@ -158,9 +159,9 @@ public class PALParser {
      * valid opcode. Passes to SpecialOpcodeHandler() if
      * opcode is SRT/END/DEF or not recognized.
      * @param err reported to if any errors
+     * @param newLine line to be examined
      */
     public void OpcodeHandler(ErrorHandler err, String newLine) {
-
         String[] wordSplitter = newLine.split(" ");
         for (String word : wordSplitter) {
             firstWord = word;
@@ -191,6 +192,7 @@ public class PALParser {
      * Also handles unrecognized opcodes and sends errors to ErrorHandler.
      * @param err reported to if any errors
      * @param specOp tested for validity
+     * @param newLine line to be examined
      */
     public void SpecialOpcodeHandler(ErrorHandler err, String specOp, String newLine){
         switch(firstWord){
@@ -218,6 +220,7 @@ public class PALParser {
     /**
      * Checks that use of SRT opcode is valid.
      * @param err reported to if any errors
+     * @param newLine line to be examined
      */
     public void SRTHandler(ErrorHandler err, String newLine){
         String thisLine = newLine.trim();
@@ -236,6 +239,7 @@ public class PALParser {
     /**
      * Checks that use of END opcode is valid.
      * @param err reported to if any errors
+     * @param newLine line to be examined
      */
     public void ENDHandler(ErrorHandler err, String newLine){
         String thisLine = newLine.trim();

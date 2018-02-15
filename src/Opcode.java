@@ -7,24 +7,12 @@ import java.util.List;
  * @author Jonathan Nieblas
  */
 public class Opcode {
-    /** Contains valid registers for sources/destinations. */
-    private ArrayList<String> validRegisters = new ArrayList<>();
     /** Stores variables created by DEF opcode; Contains list of valid source/destination names. */
     private ArrayList<String> validVariables = new ArrayList<>();
     /** Stores every valid label that was branched to. Compared to original Label List for error 16.*/
     private ArrayList<String> encounteredLabels = new ArrayList<>();
     /** Split variable later used to split a line by each comma encountered. */
     private String[] wordSplitter;
-
-
-    /**
-     * Creates validRegisters ArrayList when created.
-     */
-    public Opcode (){
-        for(int i = 0; i < 8; i++){
-            validRegisters.add("R" + i);
-        }
-    }
 
     /**
      * Takes a line & the .pal file's information and passes a spaces-removed line
@@ -78,7 +66,7 @@ public class Opcode {
         wordSplitter = newLine.split(",");
         for(String word : wordSplitter){
             if(wordCount < 4){
-                IsValidRegister(err, word);
+                err.IsValidRegister(validVariables, word);
             }
             wordCount++;
         }
@@ -98,7 +86,7 @@ public class Opcode {
         ErrorHandler err = new ErrorHandler(linesToLog);
         wordSplitter = newLine.split(",");
         for(String word : wordSplitter){
-            IsValidRegister(err, word);
+            err.IsValidRegister(validVariables, word);
             wordCount++;
         }
         LogListWriter(err, linesToLog, wordCount, lineCount, "MC", originalLine, numOfErr);
@@ -118,9 +106,9 @@ public class Opcode {
         wordSplitter = newLine.split(",");
         for(String word : wordSplitter){
             if(wordCount == 0){
-                err.ShouldBeInteger(word);
+                err.IsValidInteger(word);
             } else if(wordCount > 0){
-                IsValidRegister(err, word);
+                err.IsValidRegister(validVariables, word);
             }
             wordCount++;
         }
@@ -140,7 +128,7 @@ public class Opcode {
         ErrorHandler err = new ErrorHandler(linesToLog);
         wordSplitter = newLine.split(",");
         for(String word : wordSplitter){
-            IsValidRegister(err, word);
+            err.IsValidRegister(validVariables, word);
             wordCount++;
         }
         LogListWriter(err, linesToLog, wordCount, lineCount, "ID", originalLine, numOfErr);
@@ -162,9 +150,9 @@ public class Opcode {
         wordSplitter = newLine.split(",");
         for(String word : wordSplitter){
             if(wordCount < 2){
-                IsValidRegister(err, word);
+                err.IsValidRegister(validVariables, word);
             }else if (wordCount == 2) {
-                IsValidLabel(err, label);
+                encounteredLabels = err.IsValidLabel(validVariables, encounteredLabels, label);
             }
             wordCount++;
         }
@@ -187,7 +175,7 @@ public class Opcode {
         wordSplitter = newLine.split(",");
         for(String word : wordSplitter){
             if(wordCount == 0){
-                IsValidLabel(err, label);
+                encounteredLabels = err.IsValidLabel(validVariables, encounteredLabels, label);
             }
             wordCount++;
         }
@@ -210,7 +198,7 @@ public class Opcode {
             if(wordCount == 0){
                 validVariables.add(word);
             }if(wordCount == 1){
-                err.ShouldBeInteger(word);
+                err.IsValidInteger(word);
             }
             wordCount++;
         }
@@ -231,31 +219,6 @@ public class Opcode {
             label = originalLine.replace("BR", " ");
         }
         return label;
-    }
-
-    /**
-     * Checks that a branch references an existing label or a valid label.
-     * @param err reported to if any errors
-     * @param label from branch instruction
-     */
-    public void IsValidLabel(ErrorHandler err, String label){
-        if(validRegisters.contains(label) || validVariables.contains(label)){
-            err.AddToErrorList(10);
-            err.AddToProblemWordList(label);
-        } else{
-            encounteredLabels.add(label);
-        }
-    }
-
-    /**
-     * Checks that registers being used in Source/Destination sports are valid
-     * @param err reported to if any errors
-     * @param word valid/invalid register
-     */
-    public void IsValidRegister(ErrorHandler err, String word){
-        if(!validRegisters.contains(word) && !validVariables.contains(word)){
-            err.IncorrectOperandType(word);
-        }
     }
 
     /**

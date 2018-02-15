@@ -16,6 +16,12 @@ public class ErrorHandler {
     private ArrayList<String> problemWordList = new ArrayList<>();
     /** Contains error messages to be reported to .log file.*/
     private List<String> toLogList;
+    /** Contains encountered labels from .pal file. */
+    private ArrayList<String> encounteredLabels = new ArrayList<>();
+    /** Contains valid registers. */
+    private ArrayList<String> validRegisters = new ArrayList<>();
+    /** Contains valid variables from DEF opcodes. */
+    private ArrayList<String> validVars = new ArrayList<>();
 
     /**
      * Takes a linesToLog arrayList for adding errors.
@@ -23,6 +29,9 @@ public class ErrorHandler {
      */
     public ErrorHandler(List<String> list){
         this.toLogList = list;
+        for(int i = 0; i < 8; i++){
+            validRegisters.add("R" + i);
+        }
     }
 
     /**
@@ -67,7 +76,7 @@ public class ErrorHandler {
             case 5: error = " ** Invalid Opcode: '" + word + "' is not a valid opcode. Please review valid opcodes "
                             + "for more details.";
                     break;
-            case 6: error = " ** WARNING - Branches to Non-Existent Label: Labels '" + word + "' doesn't exist in the program.";
+            case 6: error = " ** WARNING - Branches to Non-Existent Label: Labels '" + word + "' don't exist in the program.";
                     break;
             case 7: error = " ** Wrong Operand Type: Value '" + word + "' where immediate value was expected.";
                     break;
@@ -130,7 +139,7 @@ public class ErrorHandler {
      * Checks that a string is an immediate value.
      * @param word string to be checked
      */
-    public void ShouldBeInteger(String word){
+    public void IsValidInteger(String word){
         word = word.replace(",", "");
         if(!word.matches("^-?\\d+$")){
             AddToErrorList(7);
@@ -139,19 +148,88 @@ public class ErrorHandler {
     }
 
     /**
+     * Checks that registers being used in Source/Destination sports are valid
+     * @param validVariables list of valid variables from DEF
+     * @param word valid/invalid register
+     */
+    public void IsValidRegister(ArrayList<String> validVariables, String word){
+        validVars = validVariables;
+        if(!validRegisters.contains(word) && !validVariables.contains(word)){
+            IncorrectOperandType(word);
+        }
+    }
+
+    /**
+     * Checks that a branch references an existing label or a valid label.
+     * @param validVariables contains valid variables from DEF
+     * @param encounteredLabels stores labels that program has encountered
+     * @param label from branch instruction
+     * @return encounteredLabels updated list
+     */
+    public ArrayList<String> IsValidLabel(ArrayList<String> validVariables, ArrayList<String> encounteredLabels, String label){
+        if(validRegisters.contains(label) || validVariables.contains(label)){
+            AddToErrorList(10);
+            AddToProblemWordList(label);
+        } else{
+            encounteredLabels.add(label);
+        }
+        return encounteredLabels;
+    }
+
+    /**
+     * Passes correct information of label error issue to
+     * LabelErrorHandler().
+     * @param labelList list of unused labels or non-existant labels
+     * @param numberOfErrors contains frequency of each error
+     * @param opcode obj containing encounteredLabels
+     * @param erri num of error counter
+     * @param i num of error
+     * @return erri updated error counter
+     */
+    public int LabelErrorPasser(List<String> labelList, ArrayList<Integer> numberOfErrors, Opcode opcode, int erri, int i){
+        labelList = ValidLabelsVsInvalidLabels(opcode, labelList);
+        if(i == 16) {
+            erri = LabelErrorHandler(labelList, numberOfErrors, i, erri);//check for any unused labels
+        } else if(i == 6) {
+            erri = LabelErrorHandler(encounteredLabels, numberOfErrors, i, erri);//check for any unused labels
+        }
+        return erri;
+    }
+
+    /**
+     * Compares valid labels to encountered labels, finding which valid labels were
+     * used and which encountered labels were non-existent.
+     * @param opcode obj containing encounteredLabels list
+     * @param labelList contains list of valid labels
+     * @return labelList list of unused valid labels
+     */
+    public List<String> ValidLabelsVsInvalidLabels(Opcode opcode, List<String> labelList){
+        ArrayList<String> labelsFound = new ArrayList<>();
+        encounteredLabels = opcode.getEncounteredLabels();
+
+        labelsFound.addAll(encounteredLabels);
+        encounteredLabels.removeAll(labelList);//labels that don't exist
+        labelList.removeAll(labelsFound);//labels we didn't use
+        return labelList;
+    }
+
+    /**
      * Takes a list containing labels and checks if they were unused (in the case of labelList)
      * or if they don't exist, yet were inside of a branch instruction.
      * @param list labelList or list of non-existent labels
      * @param numOfErr contains each type of error encountered
      * @param errNum error number
+     * @param erri error counter
+     * @return erri updated error counter
      */
-    public void LabelErrorHandler(ArrayList<String> list, ArrayList<Integer> numOfErr, int errNum){
+    public int LabelErrorHandler(List<String> list, ArrayList<Integer> numOfErr, int errNum, int erri){
         String loopWord = "";
         String labelsNotFound = "";
         if(!list.isEmpty() ){
             for(String label : list){
                 if(!(loopWord.equals(label))) {
                     labelsNotFound = labelsNotFound + label + ": ";
+                    erri++;
                 }
                 loopWord = label;
             }
@@ -159,28 +237,11 @@ public class ErrorHandler {
             AddToProblemWordList(labelsNotFound);
             ErrorStatementsToLogWriter(numOfErr);
         }
-    }
-
-    /**
-     * Takes two lists, one containing valid labels from the program, another containing labels
-     * that were found in branch instructions, and prepares them to be passed to the LabelErrorHandler
-     * in Class ErrorHandler. This checks to see if there are any unused labels or any labels that don't
-     * exist but were used in branch instructions.
-     */
-    public void LabelsNotUsed(List<String> linesToLog, Opcode opcode, ArrayList<String> labelList,
-                              ArrayList<Integer> numberOfErrors){
-        ErrorHandler err = new ErrorHandler(linesToLog);
-        ErrorHandler err1 = new ErrorHandler(linesToLog);
-        ArrayList<String> encounteredLabels = opcode.getEncounteredLabels();
-        ArrayList<String> labelsFound = new ArrayList<>();
-
-        labelsFound.addAll(encounteredLabels);
-        encounteredLabels.removeAll(labelList);//labels that don't exist
-        labelList.removeAll(labelsFound);//labels we didn't use
-
-        err.LabelErrorHandler(labelList, numberOfErrors, 16);//check for any unused labels
-        linesToLog.add(" ");
-        err1.LabelErrorHandler(encounteredLabels, numberOfErrors, 6);//check for any non-existent labels
+        if(erri > 0) {
+            return erri - 1;//because of AddToErrorList
+        } else{
+            return erri;
+        }
     }
 
     /**
@@ -215,6 +276,7 @@ public class ErrorHandler {
      * @param lineCount - line number parser is on
      * @param line - no comments; written to log
      * @param numOfErr - stores collective num of errors in .pal
+     * @param outsideOfProgram contains line numbers found outside of prog
      */
     public void ErrorStatementPreparer(int errID, String problemWord, List<String> linesToLog, int lineCount, String line,
                                        ArrayList<Integer> numOfErr, ArrayList<Integer> outsideOfProgram){
@@ -249,9 +311,11 @@ public class ErrorHandler {
             }
         }
         if(errorList.contains(1)) {
-            for (String word : problemWordList) {
-                toLogList.add(Errors(1, word));
-                numOfErr.add(1);
+            for(String word : problemWordList) {
+                if(!validRegisters.contains(word) && !validVars.contains(word)) {
+                    toLogList.add(Errors(1, word));
+                    numOfErr.add(1);
+                }
             }
         }
     }
