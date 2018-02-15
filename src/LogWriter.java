@@ -23,11 +23,10 @@ public class LogWriter {
      */
     public void setErrorNumbers(int err0, int err1, int err2, int err3, int err4, int err5, int err6, int err7, int err8,
                                 int err9, int err10, int err11, int err12, int err13, int err14, int err15, int err16){
-
+        //Assign all frequencies of errors from Class PALParser
         this.err0 = err0; this.err1 = err1; this.err2 = err2; this.err3 = err3; this.err4 = err4; this.err5 = err5;
         this.err6 = err6; this.err7 = err7; this.err8 = err8; this.err9 = err9; this.err10 = err10; this.err11 = err11;
         this.err12 = err12; this.err13 = err13; this.err14 = err14; this.err15 = err15; this.err16 = err16;
-
     }
 
     /**

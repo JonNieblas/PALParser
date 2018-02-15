@@ -34,6 +34,7 @@ public class Opcode {
      * @param linesToLog for lines & errors to be added to
      * @param lineCount current line's num in .pal
      * @param numOfErr contains each type of error encountered
+     * @param ogLine original line containing labels & opcodes
      */
     public void OpcodeMethodHandler(String opcode, String line, List<String> linesToLog, int lineCount,
                                     ArrayList<Integer> numOfErr, String ogLine){
